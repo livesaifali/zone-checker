@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -11,6 +10,7 @@ import {
   FileText,
   Building,
   LogOut,
+  FileSpreadsheet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -56,6 +56,7 @@ const Sidebar = () => {
   };
 
   const isAdmin = currentUser?.role === "admin";
+  const isSuperAdmin = currentUser?.role === "superadmin";
 
   return (
     <div
@@ -143,6 +144,21 @@ const Sidebar = () => {
                 {!collapsed && <span className="ml-3">Reports</span>}
               </Link>
             </>
+          )}
+
+          {(isAdmin || isSuperAdmin) && (
+            <Link
+              to="/tasks"
+              className={cn(
+                "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isActive("/tasks") &&
+                  "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+                collapsed && "justify-center px-2"
+              )}
+            >
+              <FileSpreadsheet className="h-5 w-5 shrink-0" />
+              {!collapsed && <span className="ml-3">Manage Tasks</span>}
+            </Link>
           )}
 
           <Link

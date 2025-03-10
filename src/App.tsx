@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import ManageUsers from "./pages/ManageUsers";
 import ChangePassword from "./pages/ChangePassword";
 import Reports from "./pages/Reports";
 import Sidebar from "./components/Sidebar";
+import TaskManagement from "./components/TaskManagement";
 
 const queryClient = new QueryClient();
 
@@ -32,28 +32,33 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+// Modify AdminRoute to handle both superadmin and admin roles
+const AdminRoute = ({ children, requireSuperAdmin = false }: { children: React.ReactNode, requireSuperAdmin?: boolean }) => {
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        setIsAdmin(user.role === 'admin');
+        setIsAuthorized(
+          requireSuperAdmin 
+            ? user.role === 'superadmin'
+            : ['superadmin', 'admin'].includes(user.role)
+        );
       } catch (e) {
-        setIsAdmin(false);
+        setIsAuthorized(false);
       }
     } else {
-      setIsAdmin(false);
+      setIsAuthorized(false);
     }
-  }, []);
+  }, [requireSuperAdmin]);
 
-  if (isAdmin === null) {
+  if (isAuthorized === null) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  return isAdmin ? <>{children}</> : <Navigate to="/" replace />;
+  return isAuthorized ? <>{children}</> : <Navigate to="/" replace />;
 };
 
 // Main layout with sidebar
@@ -78,6 +83,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             
+            {/* Protected routes */}
             <Route 
               path="/" 
               element={
@@ -89,13 +95,28 @@ const App = () => (
               } 
             />
             
+            {/* Super Admin only routes */}
             <Route 
               path="/users" 
               element={
                 <ProtectedRoute>
-                  <AdminRoute>
+                  <AdminRoute requireSuperAdmin>
                     <Layout>
                       <ManageUsers />
+                    </Layout>
+                  </AdminRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin and Super Admin routes */}
+            <Route 
+              path="/tasks" 
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <Layout>
+                      <TaskManagement />
                     </Layout>
                   </AdminRoute>
                 </ProtectedRoute>
