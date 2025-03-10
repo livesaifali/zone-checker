@@ -77,7 +77,9 @@ const Index = () => {
     
     // If user is not admin, only show their assigned city
     if (currentUser.role !== 'admin') {
-      filtered = filtered.filter(zone => zone.concernId === currentUser.concernId);
+      filtered = filtered.filter(zone => 
+        zone.concernId === currentUser.concernId || zone.status === 'pending'
+      );
     }
     
     setFilteredZones(filtered);
@@ -188,7 +190,7 @@ const Index = () => {
   const isAdmin = currentUser?.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-background">
       <AppHeader />
       
       <div className="max-w-6xl mx-auto p-4 md:p-8">

@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; 
 import { Badge } from '@/components/ui/badge';
-import { Check, Upload, AlertTriangle, MessageSquare, Info, Lock } from 'lucide-react';
+import { Check, Upload, AlertTriangle, MessageSquare, Info, Lock, User, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface ZoneCardProps {
   id: number;
@@ -40,6 +41,9 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
   const [isCommenting, setIsCommenting] = useState(false);
   const [localComment, setLocalComment] = useState(comment);
   const { toast } = useToast();
+  
+  // Format current date for display
+  const currentDate = format(new Date(), 'MMMM d, yyyy');
 
   const handleStatusChange = (newStatus: 'pending' | 'uploaded') => {
     if (!isEditable) {
@@ -87,6 +91,10 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
           </span>
           <span className="flex-1">{name}</span>
         </CardTitle>
+        <div className="text-xs text-muted-foreground mt-1 flex items-center">
+          <Calendar className="h-3 w-3 mr-1" />
+          <span>{currentDate}</span>
+        </div>
       </CardHeader>
       <CardContent className="p-4 pt-2">
         <div className="flex flex-col gap-3">
@@ -180,9 +188,22 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
           
           {(updatedBy || lastUpdated) && (
             <div className="text-xs text-muted-foreground mt-2 flex items-center">
-              <Info className="h-3 w-3 mr-1" />
+              <User className="h-3 w-3 mr-1" />
               {updatedBy && <span>Updated by: {updatedBy}</span>}
-              {lastUpdated && <span className="ml-auto">Date: {lastUpdated}</span>}
+              {lastUpdated && <span className="ml-auto">{lastUpdated}</span>}
+            </div>
+          )}
+          
+          {/* Show pending cities section */}
+          {status === 'pending' && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="text-xs font-medium mb-1 flex items-center">
+                <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                Pending Status
+              </div>
+              <div className="text-xs text-muted-foreground">
+                This city is currently pending updates.
+              </div>
             </div>
           )}
         </div>
