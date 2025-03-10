@@ -30,34 +30,59 @@ export function AddZoneDialog({ isOpen, onClose, onAdd }: AddZoneDialogProps) {
     }
   };
 
+  // Predefined cities for easy selection
+  const suggestedCities = [
+    'Karachi', 'Lahore', 'Islamabad', 'Hyderabad', 
+    'Sukkur', 'Larkana', 'Rawalpindi', 'Head Office',
+    'Peshawar', 'Quetta', 'Multan', 'Faisalabad'
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] glass-panel">
         <DialogHeader>
-          <DialogTitle>Add New Zone</DialogTitle>
+          <DialogTitle>Add New City</DialogTitle>
           <DialogDescription>
-            Create a new zone to add to your checklist.
+            Create a new city to add to your checklist. A unique ID will be generated automatically.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Zone Name</Label>
+              <Label htmlFor="name">City Name</Label>
               <Input
                 id="name"
                 value={zoneName}
                 onChange={(e) => setZoneName(e.target.value)}
-                placeholder="Enter zone name"
+                placeholder="Enter city name"
                 className="col-span-3"
                 autoFocus
               />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Suggested Cities</Label>
+              <div className="flex flex-wrap gap-2">
+                {suggestedCities.map(city => (
+                  <Button 
+                    key={city}
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setZoneName(city)}
+                    className={zoneName === city ? "bg-primary/10 border-primary" : ""}
+                  >
+                    {city}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Add Zone</Button>
+            <Button type="submit" disabled={!zoneName.trim()}>Add City</Button>
           </DialogFooter>
         </form>
       </DialogContent>

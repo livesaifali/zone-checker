@@ -3,14 +3,21 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; 
-import { Check, Upload, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, Upload, AlertTriangle, MessageSquare, Info, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 interface ZoneCardProps {
   id: number;
   name: string;
+  concernId: string;
   isActive: boolean;
+  status: 'pending' | 'uploaded' | null;
+  comment: string;
+  updatedBy?: string;
+  lastUpdated?: string;
+  isEditable: boolean;
   onToggle: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
   onCommentChange: (id: number, comment: string) => void;
@@ -19,36 +26,44 @@ interface ZoneCardProps {
 const ZoneCard: React.FC<ZoneCardProps> = ({
   id,
   name,
+  concernId,
   isActive,
+  status,
+  comment,
+  updatedBy,
+  lastUpdated,
+  isEditable,
   onToggle,
   onStatusChange,
   onCommentChange,
 }) => {
-  const [status, setStatus] = useState<'pending' | 'uploaded' | null>(null);
-  const [comment, setComment] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
+  const [localComment, setLocalComment] = useState(comment);
   const { toast } = useToast();
 
   const handleStatusChange = (newStatus: 'pending' | 'uploaded') => {
-    setStatus(newStatus);
+    if (!isEditable) {
+      toast({
+        title: "Access denied",
+        description: "You don't have permission to update this city",
+        variant: "destructive",
+      });
+      return;
+    }
     onStatusChange(id, newStatus);
-    
-    toast({
-      title: `Status updated`,
-      description: `Zone ${name} marked as ${newStatus}`,
-      duration: 2000,
-    });
   };
 
   const handleCommentSave = () => {
-    onCommentChange(id, comment);
+    if (!isEditable) {
+      toast({
+        title: "Access denied",
+        description: "You don't have permission to update this city",
+        variant: "destructive",
+      });
+      return;
+    }
+    onCommentChange(id, localComment);
     setIsCommenting(false);
-    
-    toast({
-      title: `Comment saved`,
-      description: `Comment added to Zone ${name}`,
-      duration: 2000,
-    });
   };
 
   return (
@@ -60,6 +75,12 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
       onClick={() => onToggle(id)}
     >
       <CardHeader className="p-4 pb-2">
+        <div className="flex justify-between items-start mb-1">
+          <Badge variant="outline" className="bg-primary/10 text-primary">
+            {concernId}
+          </Badge>
+          {!isEditable && <Lock className="h-4 w-4 text-muted-foreground" />}
+        </div>
         <CardTitle className="text-lg flex items-center gap-2">
           <span className="bg-primary/10 text-primary w-7 h-7 rounded-full flex items-center justify-center text-sm">
             {id}
@@ -81,6 +102,7 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
                 e.stopPropagation();
                 handleStatusChange('pending');
               }}
+              disabled={!isEditable}
             >
               <AlertTriangle className="mr-1 h-4 w-4" />
               Pending
@@ -97,6 +119,7 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
                 e.stopPropagation();
                 handleStatusChange('uploaded');
               }}
+              disabled={!isEditable}
             >
               <Check className="mr-1 h-4 w-4" />
               Uploaded
@@ -111,8 +134,9 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
               <Textarea 
                 placeholder="Add your comment here..." 
                 className="min-h-[80px] text-sm"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                value={localComment}
+                onChange={(e) => setLocalComment(e.target.value)}
+                disabled={!isEditable}
               />
               <div className="flex gap-2 justify-end">
                 <Button 
@@ -125,6 +149,7 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
                 <Button 
                   size="sm"
                   onClick={handleCommentSave}
+                  disabled={!isEditable}
                 >
                   Save
                 </Button>
@@ -138,7 +163,9 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 setIsCommenting(true);
+                setLocalComment(comment);
               }}
+              disabled={!isEditable}
             >
               <MessageSquare className="mr-2 h-4 w-4" />
               {comment ? 'Edit Comment' : 'Add Comment'}
@@ -148,6 +175,14 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
           {comment && !isCommenting && (
             <div className="bg-muted/50 p-2 rounded-md text-sm text-muted-foreground">
               {comment}
+            </div>
+          )}
+          
+          {(updatedBy || lastUpdated) && (
+            <div className="text-xs text-muted-foreground mt-2 flex items-center">
+              <Info className="h-3 w-3 mr-1" />
+              {updatedBy && <span>Updated by: {updatedBy}</span>}
+              {lastUpdated && <span className="ml-auto">Date: {lastUpdated}</span>}
             </div>
           )}
         </div>
