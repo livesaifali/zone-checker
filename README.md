@@ -1,8 +1,128 @@
-# Welcome to your Lovable project
+
+# City Status Management System
+
+A web application for managing city status updates across different regions, with user authentication and role-based access control.
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/9659ae2a-ed91-4a12-b562-b5eae4a1835c
+
+## Login Credentials
+
+**Admin (Master) User:**
+- Username: `admin`
+- Password: `admin123`
+
+**City (Zone) Users:**
+- Example:
+  - Username: `karachi` 
+  - Password: `user123`
+
+## Features
+
+- User authentication with admin and city-specific roles
+- City status management (pending/uploaded)
+- Comments and status history tracking
+- Responsive design with dark mode support
+- Admin panel for user management
+- Reporting functionality
+- Status update history
+
+## MySQL Implementation Guide
+
+The application is currently using mock data. To implement MySQL:
+
+### Database Setup
+
+1. Create a MySQL database
+2. Set up the following tables:
+
+```sql
+-- Users table
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL, -- Store hashed passwords
+  email VARCHAR(100),
+  role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+  concern_id VARCHAR(20) NOT NULL,
+  last_login DATETIME
+);
+
+-- Cities/Zones table
+CREATE TABLE cities (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  concern_id VARCHAR(20) NOT NULL UNIQUE
+);
+
+-- Status updates table
+CREATE TABLE status_updates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  city_id INT NOT NULL,
+  status ENUM('pending', 'uploaded') NOT NULL,
+  comment TEXT,
+  updated_by INT NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (city_id) REFERENCES cities(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+
+-- Status history table
+CREATE TABLE status_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  city_id INT NOT NULL,
+  status ENUM('pending', 'uploaded') NOT NULL,
+  comment TEXT,
+  updated_by INT NOT NULL,
+  updated_at DATETIME NOT NULL,
+  FOREIGN KEY (city_id) REFERENCES cities(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+```
+
+3. Insert initial data:
+
+```sql
+-- Insert admin user
+INSERT INTO users (username, password, role, concern_id, email) 
+VALUES ('admin', 'admin123', 'admin', 'ADMIN', 'admin@example.com');
+
+-- Insert cities
+INSERT INTO cities (name, concern_id) VALUES
+('Karachi', 'KHI001'),
+('Lahore', 'LHR001'),
+('Islamabad', 'ISB001'),
+('Hyderabad', 'HYD001'),
+('Sukkur', 'SUK001'),
+('Larkana', 'LRK001'),
+('Rawalpindi', 'RWP001'),
+('Head Office', 'HQ001');
+
+-- Insert city users
+INSERT INTO users (username, password, role, concern_id, email) VALUES
+('karachi', 'user123', 'user', 'KHI001', 'karachi@example.com'),
+('lahore', 'user123', 'user', 'LHR001', 'lahore@example.com'),
+('islamabad', 'user123', 'user', 'ISB001', 'islamabad@example.com');
+```
+
+### Backend Implementation
+
+For a full MySQL implementation, you would need to:
+
+1. Set up a backend server using Node.js with Express
+2. Create API endpoints for:
+   - User authentication
+   - User management
+   - City status updates
+   - Reporting
+3. Connect to MySQL database using a library like mysql2
+4. Implement proper password hashing using bcrypt
+5. Set up JWT for authentication
+
+### Frontend Modifications
+
+Update the frontend code to fetch data from your API endpoints instead of using mock data.
 
 ## How can I edit this code?
 
@@ -10,7 +130,7 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project]() and start prompting.
+Simply visit the [Lovable Project](https://lovable.dev/projects/9659ae2a-ed91-4a12-b562-b5eae4a1835c) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
@@ -35,35 +155,3 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable]() and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)

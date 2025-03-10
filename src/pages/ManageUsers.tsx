@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -14,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Edit, Trash, Search } from "lucide-react";
+import { UserPlus, Edit, Trash, Search, Eye, EyeOff, KeyRound } from "lucide-react";
 import { format } from "date-fns";
 
 interface User {
@@ -33,6 +32,8 @@ const ManageUsers = () => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isEditingUser, setIsEditingUser] = useState<number | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState<number | null>(null);
+  const [passwordVisibility, setPasswordVisibility] = useState<{[key: number]: boolean}>({});
   const [cities, setCities] = useState<{id: number; name: string; concernId: string}[]>([]);
   const [newUser, setNewUser] = useState<Partial<User>>({
     username: "",
@@ -40,6 +41,11 @@ const ManageUsers = () => {
     role: "user",
     concernId: "",
     email: "",
+  });
+  const [newPassword, setNewPassword] = useState({
+    current: "",
+    new: "",
+    confirm: ""
   });
   const { toast } = useToast();
 
@@ -82,6 +88,65 @@ const ManageUsers = () => {
       setFilteredUsers(users);
     }
   }, [searchTerm, users]);
+
+  const togglePasswordVisibility = (userId: number) => {
+    setPasswordVisibility(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const handleChangePassword = () => {
+    if (!isChangingPassword) return;
+
+    if (!newPassword.current || !newPassword.new || !newPassword.confirm) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all password fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.new !== newPassword.confirm) {
+      toast({
+        title: "Passwords don't match",
+        description: "New password and confirmation must match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const user = users.find(u => u.id === isChangingPassword);
+    if (!user || user.password !== newPassword.current) {
+      toast({
+        title: "Incorrect password",
+        description: "Current password is incorrect",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUsers(
+      users.map(user => 
+        user.id === isChangingPassword 
+          ? { ...user, password: newPassword.new } 
+          : user
+      )
+    );
+
+    setIsChangingPassword(null);
+    setNewPassword({
+      current: "",
+      new: "",
+      confirm: ""
+    });
+
+    toast({
+      title: "Password updated",
+      description: "User password has been updated successfully",
+    });
+  };
 
   const handleAddUser = () => {
     if (!newUser.username || !newUser.password || !newUser.concernId) {
@@ -379,6 +444,53 @@ const ManageUsers = () => {
               <Button onClick={handleUpdateUser}>Update User</Button>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isChangingPassword !== null} onOpenChange={(open) => !open && setIsChangingPassword(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="current-password" className="text-right">
+                    Current Password
+                  </label>
+                  <Input
+                    id="current-password"
+                    type="password"
+                    className="col-span-3"
+                    value={newPassword.current}
+                    onChange={(e) => setNewPassword({...newPassword, current: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="new-password" className="text-right">
+                    New Password
+                  </label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    className="col-span-3"
+                    value={newPassword.new}
+                    onChange={(e) => setNewPassword({...newPassword, new: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="confirm-password" className="text-right">
+                    Confirm Password
+                  </label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    className="col-span-3"
+                    value={newPassword.confirm}
+                    onChange={(e) => setNewPassword({...newPassword, confirm: e.target.value})}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleChangePassword}>Update Password</Button>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -389,6 +501,7 @@ const ManageUsers = () => {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Username</TableHead>
+              <TableHead>Password</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>City ID</TableHead>
@@ -401,6 +514,23 @@ const ManageUsers = () => {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.id}</TableCell>
                 <TableCell>{user.username}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type={passwordVisibility[user.id] ? "text" : "password"} 
+                      value={user.password} 
+                      readOnly 
+                      className="w-32"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => togglePasswordVisibility(user.id)}
+                    >
+                      {passwordVisibility[user.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </TableCell>
                 <TableCell>{user.email || "-"}</TableCell>
                 <TableCell>
                   {user.role === "admin" ? "Administrator" : "City User"}
@@ -409,6 +539,14 @@ const ManageUsers = () => {
                 <TableCell>{user.lastLogin || "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setIsChangingPassword(user.id)}
+                      title="Change Password"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
                     <Button variant="outline" size="icon" onClick={() => startEditUser(user)}>
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -426,7 +564,7 @@ const ManageUsers = () => {
             ))}
             {filteredUsers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   No users found
                 </TableCell>
               </TableRow>

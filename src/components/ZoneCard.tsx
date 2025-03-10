@@ -4,10 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; 
 import { Badge } from '@/components/ui/badge';
-import { Check, Upload, AlertTriangle, MessageSquare, Info, Lock, User, Calendar } from 'lucide-react';
+import { Check, AlertTriangle, MessageSquare, Lock, User, Calendar, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+interface StatusUpdate {
+  status: 'pending' | 'uploaded' | null;
+  updatedBy: string;
+  timestamp: string;
+  comment?: string;
+}
 
 interface ZoneCardProps {
   id: number;
@@ -19,6 +27,7 @@ interface ZoneCardProps {
   updatedBy?: string;
   lastUpdated?: string;
   isEditable: boolean;
+  statusHistory?: StatusUpdate[];
   onToggle: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
   onCommentChange: (id: number, comment: string) => void;
@@ -34,12 +43,14 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
   updatedBy,
   lastUpdated,
   isEditable,
+  statusHistory = [],
   onToggle,
   onStatusChange,
   onCommentChange,
 }) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [localComment, setLocalComment] = useState(comment);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
   
   // Format current date for display
@@ -90,6 +101,57 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
             {id}
           </span>
           <span className="flex-1">{name}</span>
+          {statusHistory.length > 0 && (
+            <Dialog open={showHistory} onOpenChange={setShowHistory}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-0 h-7 w-7" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent onClick={(e) => e.stopPropagation()}>
+                <DialogHeader>
+                  <DialogTitle>Status History for {name}</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {statusHistory.length === 0 ? (
+                    <p className="text-center py-4 text-muted-foreground">No history available</p>
+                  ) : (
+                    <div className="space-y-4 py-4">
+                      {statusHistory.map((update, idx) => (
+                        <div key={idx} className="border-b pb-3 last:border-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <Badge 
+                              variant={update.status === 'uploaded' ? 'default' : 'outline'}
+                              className={cn(
+                                update.status === 'uploaded' ? "bg-green-500" : "bg-amber-500"
+                              )}
+                            >
+                              {update.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{update.timestamp}</span>
+                          </div>
+                          <div className="flex items-center text-sm mb-2">
+                            <User className="h-3 w-3 mr-1" />
+                            <span>Updated by: {update.updatedBy}</span>
+                          </div>
+                          {update.comment && (
+                            <div className="bg-muted/50 p-2 rounded-md text-sm text-muted-foreground">
+                              {update.comment}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </CardTitle>
         <div className="text-xs text-muted-foreground mt-1 flex items-center">
           <Calendar className="h-3 w-3 mr-1" />
@@ -194,15 +256,40 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
             </div>
           )}
           
-          {/* Show pending cities section */}
-          {status === 'pending' && (
+          {/* Show status section */}
+          {status && (
             <div className="mt-2 pt-2 border-t border-border">
               <div className="text-xs font-medium mb-1 flex items-center">
-                <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
-                Pending Status
+                {status === 'pending' ? (
+                  <>
+                    <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                    Pending Status
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-3 w-3 mr-1 text-green-500" />
+                    Uploaded Status
+                  </>
+                )}
+                
+                {statusHistory.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-auto h-5 px-2 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowHistory(true);
+                    }}
+                  >
+                    View History
+                  </Button>
+                )}
               </div>
               <div className="text-xs text-muted-foreground">
-                This city is currently pending updates.
+                {status === 'pending' 
+                  ? "This city is currently pending updates."
+                  : "This city's data has been uploaded."}
               </div>
             </div>
           )}
