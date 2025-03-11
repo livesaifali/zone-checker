@@ -14,7 +14,8 @@ const Tasks = () => {
     const mockZones: Zone[] = [
       { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
       { id: 2, name: 'Lahore', status: null, comment: '', concernId: 'LHR001' },
-      // ... add more zones as needed
+      { id: 3, name: 'Islamabad', status: null, comment: '', concernId: 'ISB001' },
+      { id: 4, name: 'Peshawar', status: null, comment: '', concernId: 'PSH001' },
     ];
     setZones(mockZones);
 

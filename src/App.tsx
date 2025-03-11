@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,8 +12,8 @@ import NotFound from "./pages/NotFound";
 import ManageUsers from "./pages/ManageUsers";
 import ChangePassword from "./pages/ChangePassword";
 import Reports from "./pages/Reports";
+import Tasks from "./pages/Tasks";
 import Sidebar from "./components/Sidebar";
-import TaskManagement from "./components/TaskManagement";
 
 const queryClient = new QueryClient();
 
@@ -116,7 +117,7 @@ const App = () => (
                 <ProtectedRoute>
                   <AdminRoute>
                     <Layout>
-                      <TaskManagement />
+                      <Tasks />
                     </Layout>
                   </AdminRoute>
                 </ProtectedRoute>
