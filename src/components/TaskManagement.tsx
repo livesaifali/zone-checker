@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,13 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Task, Zone } from '@/types';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 
 interface TaskManagementProps {
   zones: Zone[];
@@ -28,15 +21,19 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   const [dueDate, setDueDate] = useState('');
   const { toast } = useToast();
 
-  const handleSelectedZonesChange = (value: string) => {
-    if (value === 'all') {
+  const handleSelectedZonesChange = (zoneId: string) => {
+    if (zoneId === 'all') {
       // Select all zones
-      setSelectedZones(zones.map(zone => zone.concernId));
+      if (selectedZones.length === zones.length) {
+        setSelectedZones([]);
+      } else {
+        setSelectedZones(zones.map(zone => zone.concernId));
+      }
     } else {
       // Handle multi-select by toggling the selected zone
-      const updatedZones = selectedZones.includes(value)
-        ? selectedZones.filter(z => z !== value)
-        : [...selectedZones, value];
+      const updatedZones = selectedZones.includes(zoneId)
+        ? selectedZones.filter(z => z !== zoneId)
+        : [...selectedZones, zoneId];
       setSelectedZones(updatedZones);
     }
   };
@@ -85,12 +82,12 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     <div className="mb-6">
       <Dialog open={isAddingTask} onOpenChange={setIsAddingTask}>
         <DialogTrigger asChild>
-          <Button className="transition-all hover:scale-105">
+          <Button id="create-task-btn" className="transition-all hover:scale-105">
             <Plus className="mr-2 h-4 w-4" />
             Create New Task
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] glass-panel">
           <DialogHeader>
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
@@ -127,7 +124,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
               <div className="border rounded-md p-2">
                 <div className="mb-2">
                   <Button 
-                    variant="outline" 
+                    variant={selectedZones.length === zones.length ? "default" : "outline"}
                     size="sm"
                     className="w-full text-left justify-start"
                     onClick={() => handleSelectedZonesChange('all')}
@@ -154,7 +151,10 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
               </div>
             </div>
           </div>
-          <Button onClick={handleCreateTask}>Create Task</Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsAddingTask(false)}>Cancel</Button>
+            <Button onClick={handleCreateTask}>Create Task</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

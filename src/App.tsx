@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ManageUsers from "./pages/ManageUsers";
+import ManageZones from "./pages/ManageZones";
 import ChangePassword from "./pages/ChangePassword";
 import Reports from "./pages/Reports";
 import Tasks from "./pages/Tasks";
@@ -119,7 +120,7 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
                     <Layout>
-                      <Index />
+                      <ManageZones />
                     </Layout>
                   </RoleProtectedRoute>
                 </ProtectedRoute>

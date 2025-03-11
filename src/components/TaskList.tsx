@@ -16,13 +16,6 @@ import {
   User,
   Lock
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   Dialog, 
   DialogContent, 
@@ -105,9 +98,6 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
-  // Format current date for display
-  const currentDate = format(new Date(), 'MMMM d, yyyy');
-
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {filteredTasks.map((task) => (
@@ -145,7 +135,7 @@ const TaskList: React.FC<TaskListProps> = ({
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-1 flex items-center">
               <Calendar className="h-3 w-3 mr-1" />
-              <span>{currentDate}</span>
+              <span>{format(new Date(task.createdAt), 'MMMM d, yyyy')}</span>
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-2">

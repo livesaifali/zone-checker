@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 
 interface User {
   id: number;
@@ -30,6 +31,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const userStr = localStorage.getItem("currentUser");
@@ -59,6 +61,11 @@ const Sidebar = () => {
   const isAdmin = currentUser?.role === "admin";
   const isUser = currentUser?.role === "user";
 
+  // Choose logo based on theme
+  const logoUrl = theme === "dark" 
+    ? "https://i.ibb.co/dC85KhR/newlogowhite.png" 
+    : "https://i.ibb.co/Mxhj5Pd/Newlogo.png";
+
   return (
     <div
       className={cn(
@@ -68,11 +75,10 @@ const Sidebar = () => {
     >
       <div className="p-4 border-b flex items-center justify-between">
         <div className={cn("flex items-center", collapsed && "justify-center")}>
-          <div className="w-10 h-10 bg-primary text-primary-foreground rounded-md flex items-center justify-center font-bold text-xl">
-            ZM
-          </div>
-          {!collapsed && (
-            <span className="ml-3 font-semibold">Zone Management</span>
+          {collapsed ? (
+            <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
+          ) : (
+            <img src={logoUrl} alt="Logo" className="h-10 object-contain" />
           )}
         </div>
         <Button
@@ -118,19 +124,6 @@ const Sidebar = () => {
               >
                 <Users className="h-5 w-5 shrink-0" />
                 {!collapsed && <span className="ml-3">Manage Users</span>}
-              </Link>
-
-              <Link
-                to="/zones"
-                className={cn(
-                  "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isActive("/zones") &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                  collapsed && "justify-center px-2"
-                )}
-              >
-                <Map className="h-5 w-5 shrink-0" />
-                {!collapsed && <span className="ml-3">Manage Zones</span>}
               </Link>
             </>
           )}
