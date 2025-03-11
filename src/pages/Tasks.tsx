@@ -18,6 +18,10 @@ const Tasks = () => {
       { id: 2, name: 'Lahore', status: null, comment: '', concernId: 'LHR001' },
       { id: 3, name: 'Islamabad', status: null, comment: '', concernId: 'ISB001' },
       { id: 4, name: 'Peshawar', status: null, comment: '', concernId: 'PSH001' },
+      { id: 5, name: 'Hyderabad', status: 'pending', comment: 'Pending review', concernId: 'HYD001' },
+      { id: 6, name: 'Sukkur', status: 'updated', comment: 'Updated last week', concernId: 'SUK001' },
+      { id: 7, name: 'Quetta', status: 'uploaded', comment: 'All materials uploaded', concernId: 'QTA001' },
+      { id: 8, name: 'Multan', status: 'pending', comment: 'Awaiting confirmation', concernId: 'MUL001' },
     ];
     setZones(mockZones);
 
@@ -39,8 +43,37 @@ const Tasks = () => {
         createdBy: 1, // admin ID
         createdAt: new Date().toISOString(),
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-        status: 'pending',
+        status: 'updated',
         assignedZones: ['ISB001'],
+        comments: [
+          {
+            id: 1,
+            taskId: 2,
+            userId: 3,
+            userName: 'islamabad',
+            comment: 'Report has been updated with latest figures',
+            createdAt: new Date().toISOString(),
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: 'Inventory Check',
+        description: 'Conduct a physical inventory check and update the inventory system',
+        createdBy: 1, // admin ID
+        createdAt: new Date().toISOString(),
+        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+        status: 'completed',
+        assignedZones: ['HYD001', 'SUK001'],
+      },
+      {
+        id: 4,
+        title: 'Customer Feedback Collection',
+        description: 'Collect customer feedback from satisfaction surveys',
+        createdBy: 1, // admin ID
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+        assignedZones: ['KHI001', 'LHR001', 'ISB001', 'PSH001'],
       }
     ];
     setTasks(mockTasks);
@@ -78,7 +111,7 @@ const Tasks = () => {
     });
   };
 
-  const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'completed') => {
+  const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'updated' | 'completed') => {
     if (!currentUser) return;
     
     setTasks(tasks.map(task => 
@@ -94,10 +127,26 @@ const Tasks = () => {
   const handleTaskCommentUpdate = (taskId: number, comment: string) => {
     if (!currentUser) return;
     
-    // In a real app, you'd update the task comment in your database
+    const newComment = {
+      id: Math.floor(Math.random() * 1000),
+      taskId,
+      userId: currentUser.id,
+      userName: currentUser.username,
+      comment,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks(tasks.map(task => {
+      if (task.id === taskId) {
+        const comments = task.comments ? [...task.comments, newComment] : [newComment];
+        return { ...task, comments };
+      }
+      return task;
+    }));
+    
     toast({
       title: "Comment saved",
-      description: "Your comment has been saved",
+      description: "Your comment has been added to the task",
     });
   };
 

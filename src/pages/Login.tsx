@@ -9,9 +9,12 @@ import { Lock, User } from 'lucide-react';
 
 // Mock user data - replace with actual backend integration
 const MOCK_USERS = [
-  { id: 1, username: 'admin', password: 'admin123', role: 'admin', concernId: 'HQ001' },
-  { id: 2, username: 'karachi', password: 'user123', role: 'user', concernId: 'KHI001' },
-  { id: 3, username: 'lahore', password: 'user123', role: 'user', concernId: 'LHR001' },
+  { id: 1, username: 'superadmin', password: 'super123', role: 'superadmin', concernId: 'HQ001' },
+  { id: 2, username: 'admin', password: 'admin123', role: 'admin', concernId: 'HQ001' },
+  { id: 3, username: 'karachi', password: 'user123', role: 'user', concernId: 'KHI001' },
+  { id: 4, username: 'lahore', password: 'user123', role: 'user', concernId: 'LHR001' },
+  { id: 5, username: 'islamabad', password: 'user123', role: 'user', concernId: 'ISB001' },
+  { id: 6, username: 'peshawar', password: 'user123', role: 'user', concernId: 'PSH001' },
 ];
 
 const Login = () => {

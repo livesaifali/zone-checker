@@ -4,14 +4,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileSpreadsheet, Calendar, Check, Clock, MessageSquare } from 'lucide-react';
+import { 
+  FileSpreadsheet, 
+  Calendar, 
+  Check, 
+  Clock, 
+  MessageSquare, 
+  Refresh,
+  CheckCheck,
+  Users
+} from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Task } from '@/types';
 
 interface TaskListProps {
   tasks: Task[];
   userConcernId?: string;
   isUser?: boolean;
-  onStatusUpdate?: (taskId: number, status: 'pending' | 'completed') => void;
+  onStatusUpdate?: (taskId: number, status: 'pending' | 'updated' | 'completed') => void;
   onCommentUpdate?: (taskId: number, comment: string) => void;
 }
 
@@ -26,7 +42,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   
   // Filter tasks based on user's zone if they are a regular user
-  const filteredTasks = userConcernId
+  const filteredTasks = userConcernId && isUser
     ? tasks.filter(task => task.assignedZones.includes(userConcernId))
     : tasks;
 
@@ -38,15 +54,38 @@ const TaskList: React.FC<TaskListProps> = ({
     );
   }
 
-  const handleStatusToggle = (taskId: number, currentStatus: 'pending' | 'completed') => {
-    if (!onStatusUpdate || !isUser) return;
-    onStatusUpdate(taskId, currentStatus === 'pending' ? 'completed' : 'pending');
+  const handleStatusChange = (taskId: number, status: 'pending' | 'updated' | 'completed') => {
+    if (!onStatusUpdate) return;
+    onStatusUpdate(taskId, status);
   };
 
   const handleCommentSubmit = (taskId: number) => {
-    if (!onCommentUpdate) return;
-    onCommentUpdate(taskId, commentInputs[taskId] || '');
+    if (!onCommentUpdate || !commentInputs[taskId]) return;
+    onCommentUpdate(taskId, commentInputs[taskId]);
+    setCommentInputs({...commentInputs, [taskId]: ''});
     setIsCommenting({...isCommenting, [taskId]: false});
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500';
+      case 'updated':
+        return 'bg-blue-500';
+      default:
+        return 'bg-amber-500';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCheck className="h-4 w-4 mr-1" />;
+      case 'updated':
+        return <Refresh className="h-4 w-4 mr-1" />;
+      default:
+        return <Clock className="h-4 w-4 mr-1" />;
+    }
   };
 
   return (
@@ -60,10 +99,11 @@ const TaskList: React.FC<TaskListProps> = ({
                 {task.title}
               </CardTitle>
               <Badge
-                variant={task.status === 'completed' ? 'default' : 'outline'}
-                className={task.status === 'completed' ? 'bg-green-500' : 'bg-amber-500'}
+                variant="outline"
+                className={getStatusBadgeColor(task.status)}
               >
-                {task.status === 'completed' ? 'Completed' : 'Pending'}
+                {getStatusIcon(task.status)}
+                {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
               </Badge>
             </div>
           </CardHeader>
@@ -75,36 +115,71 @@ const TaskList: React.FC<TaskListProps> = ({
                 Due: {new Date(task.dueDate).toLocaleDateString()}
               </div>
             )}
+            {task.assignedZones && task.assignedZones.length > 0 && (
+              <div className="mt-2 text-sm text-muted-foreground flex items-center">
+                <Users className="h-4 w-4 mr-1" />
+                Assigned to: {task.assignedZones.length} zone(s)
+              </div>
+            )}
+            
+            {/* Show existing comments if any */}
+            {task.comments && task.comments.length > 0 && (
+              <div className="mt-4 pt-3 border-t">
+                <h4 className="text-sm font-medium mb-2">Comments:</h4>
+                <div className="space-y-2">
+                  {task.comments.map(comment => (
+                    <div key={comment.id} className="text-sm bg-muted p-2 rounded">
+                      <div className="font-medium">{comment.userName}</div>
+                      <div>{comment.comment}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
           {isUser && (
             <CardFooter className="flex flex-col gap-2 border-t pt-3">
               <div className="flex justify-between w-full">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="flex-1 mr-2"
-                  onClick={() => handleStatusToggle(task.id, task.status)}
+                <Select
+                  value={task.status}
+                  onValueChange={(value: 'pending' | 'updated' | 'completed') => 
+                    handleStatusChange(task.id, value)
+                  }
                 >
-                  {task.status === 'completed' ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-1" />
-                      Mark as Pending
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4 mr-1" />
-                      Mark as Completed
-                    </>
-                  )}
-                </Button>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        Pending
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="updated">
+                      <div className="flex items-center">
+                        <Refresh className="h-4 w-4 mr-2" />
+                        Updated
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="completed">
+                      <div className="flex items-center">
+                        <CheckCheck className="h-4 w-4 mr-2" />
+                        Completed
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex-1"
                   onClick={() => setIsCommenting({...isCommenting, [task.id]: !isCommenting[task.id]})}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  {isCommenting[task.id] ? 'Cancel Comment' : 'Add Comment'}
+                  {isCommenting[task.id] ? 'Cancel' : 'Add Comment'}
                 </Button>
               </div>
               

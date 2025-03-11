@@ -112,7 +112,7 @@ const App = () => (
               } 
             />
             
-            {/* Admin and Super Admin routes */}
+            {/* Tasks route accessible to all roles */}
             <Route 
               path="/tasks" 
               element={
@@ -124,6 +124,7 @@ const App = () => (
               } 
             />
             
+            {/* Admin and Super Admin routes */}
             <Route 
               path="/reports" 
               element={

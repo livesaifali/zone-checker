@@ -27,12 +27,12 @@ import {
   Cell 
 } from 'recharts';
 import { Download, Calendar, ArrowDownToLine } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 interface Zone {
   id: number;
   name: string;
-  status: 'pending' | 'uploaded' | null;
+  status: 'pending' | 'updated' | 'uploaded' | null;
   comment: string;
   concernId: string;
   updatedBy?: string;
@@ -42,7 +42,8 @@ interface Zone {
 interface ReportData {
   name: string;
   pending: number;
-  uploaded: number;
+  updated: number;
+  completed: number;
   notStarted: number;
   completionPercentage: number;
 }
@@ -51,7 +52,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const Reports = () => {
   const [zones, setZones] = useState<Zone[]>([]);
-  const [reportType, setReportType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [reportType, setReportType] = useState<'daily' | 'weekly' | '15day' | 'monthly'>('daily');
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString());
@@ -63,7 +64,7 @@ const Reports = () => {
       { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
       { id: 2, name: 'Lahore', status: 'pending', comment: 'Need to verify dimensions', concernId: 'LHR001', updatedBy: 'user123', lastUpdated: '2023-08-15' },
       { id: 3, name: 'Islamabad', status: 'uploaded', comment: 'All materials uploaded', concernId: 'ISB001', updatedBy: 'admin', lastUpdated: '2023-08-10' },
-      { id: 4, name: 'Hyderabad', status: 'uploaded', comment: '', concernId: 'HYD001', updatedBy: 'user789', lastUpdated: '2023-09-01' },
+      { id: 4, name: 'Hyderabad', status: 'updated', comment: 'Updated but pending review', concernId: 'HYD001', updatedBy: 'user789', lastUpdated: '2023-09-01' },
       { id: 5, name: 'Sukkur', status: 'pending', comment: 'Waiting for inventory list', concernId: 'SUK001', updatedBy: 'user456', lastUpdated: '2023-08-05' },
       { id: 6, name: 'Larkana', status: null, comment: '', concernId: 'LRK001' },
       { id: 7, name: 'Rawalpindi', status: 'uploaded', comment: 'Completed last week', concernId: 'RWP001', updatedBy: 'user123', lastUpdated: '2023-08-20' },
@@ -89,15 +90,17 @@ const Reports = () => {
         date.setDate(date.getDate() - i);
         
         const pending = Math.floor(Math.random() * 3) + 1;
-        const uploaded = Math.floor(Math.random() * 4) + 2;
-        const notStarted = 8 - pending - uploaded;
+        const updated = Math.floor(Math.random() * 2) + 1;
+        const completed = Math.floor(Math.random() * 3) + 1;
+        const notStarted = 8 - pending - updated - completed;
         
         data.push({
           name: format(date, 'MMM dd'),
           pending,
-          uploaded,
+          updated,
+          completed,
           notStarted,
-          completionPercentage: Math.round((uploaded / 8) * 100)
+          completionPercentage: Math.round((completed / 8) * 100)
         });
       }
     } else if (reportType === 'weekly') {
@@ -105,15 +108,35 @@ const Reports = () => {
       for (let i = 4; i >= 1; i--) {
         const weekNum = new Date().getMonth() * 4 + Math.floor(new Date().getDate() / 7) + 1 - i;
         const pending = Math.floor(Math.random() * 3) + 1;
-        const uploaded = Math.floor(Math.random() * 4) + 2;
-        const notStarted = 8 - pending - uploaded;
+        const updated = Math.floor(Math.random() * 2) + 1;
+        const completed = Math.floor(Math.random() * 3) + 1;
+        const notStarted = 8 - pending - updated - completed;
         
         data.push({
           name: `Week ${weekNum > 0 ? weekNum : 52 + weekNum}`,
           pending,
-          uploaded,
+          updated,
+          completed,
           notStarted,
-          completionPercentage: Math.round((uploaded / 8) * 100)
+          completionPercentage: Math.round((completed / 8) * 100)
+        });
+      }
+    } else if (reportType === '15day') {
+      // Generate last 15 days
+      for (let i = 14; i >= 0; i--) {
+        const date = subDays(new Date(), i);
+        const pending = Math.floor(Math.random() * 3) + 1;
+        const updated = Math.floor(Math.random() * 2) + 1;
+        const completed = Math.floor(Math.random() * 3) + 1;
+        const notStarted = 8 - pending - updated - completed;
+        
+        data.push({
+          name: format(date, 'MMM dd'),
+          pending,
+          updated,
+          completed,
+          notStarted,
+          completionPercentage: Math.round((completed / 8) * 100)
         });
       }
     } else if (reportType === 'monthly') {
@@ -128,15 +151,17 @@ const Reports = () => {
       
       for (const month of monthsToShow) {
         const pending = Math.floor(Math.random() * 3) + 1;
-        const uploaded = Math.floor(Math.random() * 4) + 3;
-        const notStarted = 8 - pending - uploaded;
+        const updated = Math.floor(Math.random() * 2) + 1;
+        const completed = Math.floor(Math.random() * 4) + 2;
+        const notStarted = 8 - pending - updated - completed;
         
         data.push({
           name: month,
           pending,
-          uploaded,
+          updated,
+          completed,
           notStarted,
-          completionPercentage: Math.round((uploaded / 8) * 100)
+          completionPercentage: Math.round((completed / 8) * 100)
         });
       }
     }
@@ -151,11 +176,11 @@ const Reports = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     
     // Add headers
-    csvContent += "Date,Pending,Uploaded,Not Started,Completion %\n";
+    csvContent += "Date,Pending,Updated,Completed,Not Started,Completion %\n";
     
     // Add data rows
     reportData.forEach(item => {
-      csvContent += `${item.name},${item.pending},${item.uploaded},${item.notStarted},${item.completionPercentage}%\n`;
+      csvContent += `${item.name},${item.pending},${item.updated},${item.completed},${item.notStarted},${item.completionPercentage}%\n`;
     });
     
     // Create download link
@@ -177,7 +202,8 @@ const Reports = () => {
 
   // Data for the pie chart - current status overview
   const pieData = [
-    { name: 'Uploaded', value: zones.filter(z => z.status === 'uploaded').length },
+    { name: 'Completed', value: zones.filter(z => z.status === 'uploaded').length },
+    { name: 'Updated', value: zones.filter(z => z.status === 'updated').length },
     { name: 'Pending', value: zones.filter(z => z.status === 'pending').length },
     { name: 'Not Started', value: zones.filter(z => z.status === null).length },
   ];
@@ -193,13 +219,14 @@ const Reports = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Select value={reportType} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setReportType(value)}>
+          <Select value={reportType} onValueChange={(value: 'daily' | 'weekly' | '15day' | 'monthly') => setReportType(value)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Report Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="daily">Daily</SelectItem>
               <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="15day">15 Days</SelectItem>
               <SelectItem value="monthly">Monthly</SelectItem>
             </SelectContent>
           </Select>
@@ -257,7 +284,9 @@ const Reports = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Upload Progress</CardTitle>
             <CardDescription>
-              {reportType === 'daily' ? 'Last 7 days' : reportType === 'weekly' ? 'Last 4 weeks' : 'Monthly view'}
+              {reportType === 'daily' ? 'Last 7 days' : 
+               reportType === 'weekly' ? 'Last 4 weeks' : 
+               reportType === '15day' ? 'Last 15 days' : 'Monthly view'}
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
@@ -289,7 +318,7 @@ const Reports = () => {
         <CardHeader>
           <CardTitle>Detailed Report</CardTitle>
           <CardDescription>
-            Status breakdown by {reportType === 'daily' ? 'day' : reportType === 'weekly' ? 'week' : 'month'}
+            Status breakdown by {reportType === 'daily' ? 'day' : reportType === 'weekly' ? 'week' : reportType === '15day' ? '15 days' : 'month'}
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[400px]">
@@ -303,7 +332,8 @@ const Reports = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="uploaded" name="Uploaded" stackId="a" fill="#00C49F" />
+              <Bar dataKey="completed" name="Completed" stackId="a" fill="#00C49F" />
+              <Bar dataKey="updated" name="Updated" stackId="a" fill="#0088FE" />
               <Bar dataKey="pending" name="Pending" stackId="a" fill="#FFBB28" />
               <Bar dataKey="notStarted" name="Not Started" stackId="a" fill="#FF8042" />
             </BarChart>

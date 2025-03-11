@@ -16,7 +16,7 @@ export interface Task {
   createdBy: number; // admin ID
   createdAt: string;
   dueDate?: string;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'updated' | 'completed';
   assignedZones: string[]; // array of concernIds
   comments?: TaskComment[];
 }
@@ -33,7 +33,7 @@ export interface TaskComment {
 export interface Zone {
   id: number;
   name: string;
-  status: 'pending' | 'uploaded' | null;
+  status: 'pending' | 'updated' | 'uploaded' | null;
   comment: string;
   concernId: string;
   updatedBy?: string;
