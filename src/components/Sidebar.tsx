@@ -5,11 +5,10 @@ import {
   Users,
   Key,
   Home,
-  UserPlus,
   ChevronLeft,
   ChevronRight,
   FileText,
-  Building,
+  Map,
   LogOut,
   FileSpreadsheet
 } from "lucide-react";
@@ -70,10 +69,10 @@ const Sidebar = () => {
       <div className="p-4 border-b flex items-center justify-between">
         <div className={cn("flex items-center", collapsed && "justify-center")}>
           <div className="w-10 h-10 bg-primary text-primary-foreground rounded-md flex items-center justify-center font-bold text-xl">
-            CC
+            ZM
           </div>
           {!collapsed && (
-            <span className="ml-3 font-semibold">City Checklist</span>
+            <span className="ml-3 font-semibold">Zone Management</span>
           )}
         </div>
         <Button
@@ -122,34 +121,49 @@ const Sidebar = () => {
               </Link>
 
               <Link
-                to="/cities"
+                to="/zones"
                 className={cn(
                   "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isActive("/cities") &&
+                  isActive("/zones") &&
                     "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                   collapsed && "justify-center px-2"
                 )}
               >
-                <Building className="h-5 w-5 shrink-0" />
-                {!collapsed && <span className="ml-3">Manage Cities</span>}
+                <Map className="h-5 w-5 shrink-0" />
+                {!collapsed && <span className="ml-3">Manage Zones</span>}
               </Link>
             </>
           )}
 
           {/* Admin and Super Admin Routes */}
           {(isAdmin || isSuperAdmin) && (
-            <Link
-              to="/reports"
-              className={cn(
-                "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                isActive("/reports") &&
-                  "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                collapsed && "justify-center px-2"
-              )}
-            >
-              <FileText className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="ml-3">Reports</span>}
-            </Link>
+            <>
+              <Link
+                to="/zones"
+                className={cn(
+                  "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  isActive("/zones") &&
+                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+                  collapsed && "justify-center px-2"
+                )}
+              >
+                <Map className="h-5 w-5 shrink-0" />
+                {!collapsed && <span className="ml-3">Manage Zones</span>}
+              </Link>
+              
+              <Link
+                to="/reports"
+                className={cn(
+                  "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  isActive("/reports") &&
+                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+                  collapsed && "justify-center px-2"
+                )}
+              >
+                <FileText className="h-5 w-5 shrink-0" />
+                {!collapsed && <span className="ml-3">Reports</span>}
+              </Link>
+            </>
           )}
 
           {/* Tasks route for all users (content differs based on role) */}

@@ -63,7 +63,7 @@ const Tasks = () => {
         createdBy: 1, // admin ID
         createdAt: new Date().toISOString(),
         dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-        status: 'completed',
+        status: 'updated',
         assignedZones: ['HYD001', 'SUK001'],
       },
       {
@@ -111,7 +111,7 @@ const Tasks = () => {
     });
   };
 
-  const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'updated' | 'completed') => {
+  const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'updated') => {
     if (!currentUser) return;
     
     setTasks(tasks.map(task => 
@@ -150,6 +150,15 @@ const Tasks = () => {
     });
   };
 
+  const handleDeleteTask = (taskId: number) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+    
+    toast({
+      title: "Task deleted",
+      description: "The task has been removed",
+    });
+  };
+
   // Determine user role and permissions
   const isSuperAdmin = currentUser?.role === 'superadmin';
   const isAdmin = currentUser?.role === 'admin';
@@ -174,7 +183,9 @@ const Tasks = () => {
         userConcernId={currentUser?.concernId}
         onStatusUpdate={handleTaskStatusUpdate}
         onCommentUpdate={handleTaskCommentUpdate} 
+        onDeleteTask={canCreateTasks ? handleDeleteTask : undefined}
         isUser={!canCreateTasks}
+        isAdmin={isAdmin}
       />
     </div>
   );

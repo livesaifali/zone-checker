@@ -85,7 +85,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     <div className="mb-6">
       <Dialog open={isAddingTask} onOpenChange={setIsAddingTask}>
         <DialogTrigger asChild>
-          <Button>
+          <Button className="transition-all hover:scale-105">
             <Plus className="mr-2 h-4 w-4" />
             Create New Task
           </Button>

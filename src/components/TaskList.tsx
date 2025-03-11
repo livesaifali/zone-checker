@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,12 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   FileSpreadsheet, 
   Calendar, 
-  Check, 
   Clock, 
   MessageSquare, 
   RefreshCw,
-  CheckCheck,
-  Users
+  Users,
+  AlertTriangle,
+  Trash2,
+  User,
+  Lock
 } from 'lucide-react';
 import {
   Select,
@@ -20,25 +23,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
 
 interface TaskListProps {
   tasks: Task[];
   userConcernId?: string;
   isUser?: boolean;
-  onStatusUpdate?: (taskId: number, status: 'pending' | 'updated' | 'completed') => void;
+  isAdmin?: boolean;
+  onStatusUpdate?: (taskId: number, status: 'pending' | 'updated') => void;
   onCommentUpdate?: (taskId: number, comment: string) => void;
+  onDeleteTask?: (taskId: number) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
   tasks, 
   userConcernId, 
   isUser = false,
+  isAdmin = false,
   onStatusUpdate,
-  onCommentUpdate
+  onCommentUpdate,
+  onDeleteTask
 }) => {
   const [commentInputs, setCommentInputs] = useState<{[key: number]: string}>({});
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
   
   const filteredTasks = userConcernId && isUser
     ? tasks.filter(task => task.assignedZones.includes(userConcernId))
@@ -52,7 +70,7 @@ const TaskList: React.FC<TaskListProps> = ({
     );
   }
 
-  const handleStatusChange = (taskId: number, status: 'pending' | 'updated' | 'completed') => {
+  const handleStatusChange = (taskId: number, status: 'pending' | 'updated') => {
     if (!onStatusUpdate) return;
     onStatusUpdate(taskId, status);
   };
@@ -64,12 +82,15 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsCommenting({...isCommenting, [taskId]: false});
   };
 
+  const handleDeleteTask = (taskId: number) => {
+    if (!onDeleteTask) return;
+    onDeleteTask(taskId);
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-500';
       case 'updated':
-        return 'bg-blue-500';
+        return 'bg-green-500';
       default:
         return 'bg-amber-500';
     }
@@ -77,38 +98,60 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCheck className="h-4 w-4 mr-1" />;
       case 'updated':
         return <RefreshCw className="h-4 w-4 mr-1" />;
       default:
-        return <Clock className="h-4 w-4 mr-1" />;
+        return <AlertTriangle className="h-4 w-4 mr-1" />;
     }
   };
+
+  // Format current date for display
+  const currentDate = format(new Date(), 'MMMM d, yyyy');
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {filteredTasks.map((task) => (
-        <Card key={task.id} className="transition-all hover:shadow-md">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-lg">
-                <FileSpreadsheet className="h-5 w-5 inline-block mr-2" />
-                {task.title}
-              </CardTitle>
-              <Badge
-                variant="outline"
-                className={getStatusBadgeColor(task.status)}
-              >
-                {getStatusIcon(task.status)}
-                {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+        <Card 
+          key={task.id} 
+          className={cn(
+            "transition-all hover:shadow-md overflow-hidden",
+            selectedTaskId === task.id ? "border-primary border-2" : "border"
+          )}
+          onClick={() => setSelectedTaskId(task.id === selectedTaskId ? null : task.id)}
+        >
+          <CardHeader className="p-4 pb-2">
+            <div className="flex justify-between items-start mb-1">
+              <Badge variant="outline" className="bg-primary/10 text-primary">
+                Task #{task.id}
               </Badge>
+              {!isUser && !isAdmin && <Lock className="h-4 w-4 text-muted-foreground" />}
+              {(isAdmin || (!isUser && !isAdmin)) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTask(task.id);
+                  }}
+                  className="h-8 w-8 text-destructive hover:text-destructive/80"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary bg-primary/10 rounded p-0.5" />
+              <span className="flex-1">{task.title}</span>
+            </CardTitle>
+            <div className="text-xs text-muted-foreground mt-1 flex items-center">
+              <Calendar className="h-3 w-3 mr-1" />
+              <span>{currentDate}</span>
             </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{task.description}</p>
+          <CardContent className="p-4 pt-2">
+            <p className="text-muted-foreground mb-3">{task.description}</p>
             {task.dueDate && (
-              <div className="mt-4 text-sm text-muted-foreground flex items-center">
+              <div className="mt-2 text-sm text-muted-foreground flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
                 Due: {new Date(task.dueDate).toLocaleDateString()}
               </div>
@@ -119,15 +162,95 @@ const TaskList: React.FC<TaskListProps> = ({
                 Assigned to: {task.assignedZones.length} zone(s)
               </div>
             )}
+
+            <div className="flex gap-2 mt-4">
+              <Button 
+                variant={task.status === 'pending' ? 'default' : 'outline'} 
+                size="sm" 
+                className={cn(
+                  "flex-1 transition-all duration-300",
+                  task.status === 'pending' ? "bg-amber-500 hover:bg-amber-600" : ""
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(task.id, 'pending');
+                }}
+                disabled={!isUser}
+              >
+                <AlertTriangle className="mr-1 h-4 w-4" />
+                Pending
+              </Button>
+              
+              <Button 
+                variant={task.status === 'updated' ? 'default' : 'outline'} 
+                size="sm" 
+                className={cn(
+                  "flex-1 transition-all duration-300",
+                  task.status === 'updated' ? "bg-green-500 hover:bg-green-600" : ""
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(task.id, 'updated');
+                }}
+                disabled={!isUser}
+              >
+                <RefreshCw className="mr-1 h-4 w-4" />
+                Updated
+              </Button>
+            </div>
             
-            {task.comments && task.comments.length > 0 && (
+            {isCommenting[task.id] ? (
+              <div 
+                className="flex flex-col gap-2 mt-4" 
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Textarea 
+                  placeholder="Add your comment here..." 
+                  className="min-h-[80px] text-sm"
+                  value={commentInputs[task.id] || ''}
+                  onChange={(e) => setCommentInputs({...commentInputs, [task.id]: e.target.value})}
+                  disabled={!isUser}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCommenting({...isCommenting, [task.id]: false})}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => handleCommentSubmit(task.id)}
+                    disabled={!isUser}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start text-muted-foreground mt-4"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommenting({...isCommenting, [task.id]: true});
+                }}
+                disabled={!isUser}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                {task.comments && task.comments.length > 0 ? 'Edit Comment' : 'Add Comment'}
+              </Button>
+            )}
+            
+            {task.comments && task.comments.length > 0 && !isCommenting[task.id] && (
               <div className="mt-4 pt-3 border-t">
-                <h4 className="text-sm font-medium mb-2">Comments:</h4>
                 <div className="space-y-2">
                   {task.comments.map(comment => (
-                    <div key={comment.id} className="text-sm bg-muted p-2 rounded">
-                      <div className="font-medium">{comment.userName}</div>
-                      <div>{comment.comment}</div>
+                    <div key={comment.id} className="bg-muted/50 p-2 rounded-md">
+                      <div className="font-medium text-sm">{comment.userName}</div>
+                      <div className="text-sm">{comment.comment}</div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {new Date(comment.createdAt).toLocaleString()}
                       </div>
@@ -136,65 +259,36 @@ const TaskList: React.FC<TaskListProps> = ({
                 </div>
               </div>
             )}
-          </CardContent>
-          {isUser && (
-            <CardFooter className="flex flex-col gap-2 border-t pt-3">
-              <div className="flex justify-between w-full">
-                <Select
-                  value={task.status}
-                  onValueChange={(value: 'pending' | 'updated' | 'completed') => 
-                    handleStatusChange(task.id, value)
-                  }
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2" />
-                        Pending
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="updated">
-                      <div className="flex items-center">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Updated
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="completed">
-                      <div className="flex items-center">
-                        <CheckCheck className="h-4 w-4 mr-2" />
-                        Completed
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsCommenting({...isCommenting, [task.id]: !isCommenting[task.id]})}
-                >
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  {isCommenting[task.id] ? 'Cancel' : 'Add Comment'}
-                </Button>
+            
+            {/* Show status section */}
+            <div className="mt-4 pt-2 border-t border-border">
+              <div className="text-xs font-medium mb-1 flex items-center">
+                {task.status === 'pending' ? (
+                  <>
+                    <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                    Pending Status
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 text-green-500" />
+                    Updated Status
+                  </>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {task.status === 'pending' 
+                  ? "This task is currently pending updates."
+                  : "This task has been updated."}
               </div>
               
-              {isCommenting[task.id] && (
-                <div className="mt-2 w-full">
-                  <Textarea 
-                    placeholder="Enter your comment..."
-                    className="mb-2"
-                    value={commentInputs[task.id] || ''}
-                    onChange={(e) => setCommentInputs({...commentInputs, [task.id]: e.target.value})}
-                  />
-                  <Button size="sm" onClick={() => handleCommentSubmit(task.id)}>
-                    Save Comment
-                  </Button>
+              {task.comments && task.comments.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-2 flex items-center">
+                  <User className="h-3 w-3 mr-1" />
+                  <span>Last updated by: {task.comments[task.comments.length - 1].userName}</span>
                 </div>
               )}
-            </CardFooter>
-          )}
+            </div>
+          </CardContent>
         </Card>
       ))}
     </div>

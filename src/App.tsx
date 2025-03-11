@@ -112,19 +112,20 @@ const App = () => (
               } 
             />
             
-            {/* Tasks route accessible to all roles */}
+            {/* Admin and Super Admin routes */}
             <Route 
-              path="/tasks" 
+              path="/zones" 
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <Tasks />
-                  </Layout>
+                  <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
+                    <Layout>
+                      <Index />
+                    </Layout>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
             
-            {/* Admin and Super Admin routes */}
             <Route 
               path="/reports" 
               element={
@@ -134,6 +135,18 @@ const App = () => (
                       <Reports />
                     </Layout>
                   </RoleProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Tasks route accessible to all roles */}
+            <Route 
+              path="/tasks" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Tasks />
+                  </Layout>
                 </ProtectedRoute>
               } 
             />
