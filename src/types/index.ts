@@ -18,6 +18,16 @@ export interface Task {
   dueDate?: string;
   status: 'pending' | 'completed';
   assignedZones: string[]; // array of concernIds
+  comments?: TaskComment[];
+}
+
+export interface TaskComment {
+  id: number;
+  taskId: number;
+  userId: number;
+  userName: string;
+  comment: string;
+  createdAt: string;
 }
 
 export interface Zone {

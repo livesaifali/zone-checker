@@ -1,14 +1,19 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { FileSpreadsheet, Plus, Calendar } from 'lucide-react';
 import type { Task, Zone } from '@/types';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface TaskManagementProps {
   zones: Zone[];
@@ -22,6 +27,19 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   const [taskDescription, setTaskDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const { toast } = useToast();
+
+  const handleSelectedZonesChange = (value: string) => {
+    if (value === 'all') {
+      // Select all zones
+      setSelectedZones(zones.map(zone => zone.concernId));
+    } else {
+      // Handle multi-select by toggling the selected zone
+      const updatedZones = selectedZones.includes(value)
+        ? selectedZones.filter(z => z !== value)
+        : [...selectedZones, value];
+      setSelectedZones(updatedZones);
+    }
+  };
 
   const handleCreateTask = () => {
     if (!taskTitle || !taskDescription || selectedZones.length === 0) {
@@ -48,11 +66,19 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     setTaskDescription('');
     setSelectedZones([]);
     setDueDate('');
+  };
 
-    toast({
-      title: "Task created",
-      description: "The task has been assigned to selected zones",
-    });
+  // Generate the selected zones display text
+  const getSelectedZonesText = () => {
+    if (selectedZones.length === 0) return "Select zones";
+    if (selectedZones.length === zones.length) return "All zones";
+    if (selectedZones.length <= 2) {
+      return selectedZones.map(id => {
+        const zone = zones.find(z => z.concernId === id);
+        return zone ? zone.name : id;
+      }).join(', ');
+    }
+    return `${selectedZones.length} zones selected`;
   };
 
   return (
@@ -98,21 +124,34 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
             </div>
             <div className="grid gap-2">
               <label>Assign to Zones</label>
-              <Select
-                value={selectedZones.join(',')}
-                onValueChange={(value) => setSelectedZones(value.split(','))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select zones" />
-                </SelectTrigger>
-                <SelectContent>
+              <div className="border rounded-md p-2">
+                <div className="mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full text-left justify-start"
+                    onClick={() => handleSelectedZonesChange('all')}
+                  >
+                    {selectedZones.length === zones.length ? "Deselect All" : "Select All Zones"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   {zones.map((zone) => (
-                    <SelectItem key={zone.id} value={zone.concernId}>
-                      {zone.name} ({zone.concernId})
-                    </SelectItem>
+                    <Button
+                      key={zone.id}
+                      variant={selectedZones.includes(zone.concernId) ? "default" : "outline"}
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => handleSelectedZonesChange(zone.concernId)}
+                    >
+                      {zone.name}
+                    </Button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {getSelectedZonesText()}
+              </div>
             </div>
           </div>
           <Button onClick={handleCreateTask}>Create Task</Button>

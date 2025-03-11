@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -55,8 +56,9 @@ const Sidebar = () => {
     navigate("/login");
   };
 
-  const isAdmin = currentUser?.role === "admin";
   const isSuperAdmin = currentUser?.role === "superadmin";
+  const isAdmin = currentUser?.role === "admin";
+  const isUser = currentUser?.role === "user";
 
   return (
     <div
@@ -103,7 +105,8 @@ const Sidebar = () => {
             {!collapsed && <span className="ml-3">Dashboard</span>}
           </Link>
 
-          {isAdmin && (
+          {/* Super Admin Only Routes */}
+          {isSuperAdmin && (
             <>
               <Link
                 to="/users"
@@ -130,36 +133,42 @@ const Sidebar = () => {
                 <Building className="h-5 w-5 shrink-0" />
                 {!collapsed && <span className="ml-3">Manage Cities</span>}
               </Link>
-
-              <Link
-                to="/reports"
-                className={cn(
-                  "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isActive("/reports") &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                  collapsed && "justify-center px-2"
-                )}
-              >
-                <FileText className="h-5 w-5 shrink-0" />
-                {!collapsed && <span className="ml-3">Reports</span>}
-              </Link>
             </>
           )}
 
+          {/* Admin and Super Admin Routes */}
           {(isAdmin || isSuperAdmin) && (
             <Link
-              to="/tasks"
+              to="/reports"
               className={cn(
                 "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                isActive("/tasks") &&
+                isActive("/reports") &&
                   "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                 collapsed && "justify-center px-2"
               )}
             >
-              <FileSpreadsheet className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="ml-3">Manage Tasks</span>}
+              <FileText className="h-5 w-5 shrink-0" />
+              {!collapsed && <span className="ml-3">Reports</span>}
             </Link>
           )}
+
+          {/* Tasks route for all users (content differs based on role) */}
+          <Link
+            to="/tasks"
+            className={cn(
+              "flex items-center rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              isActive("/tasks") &&
+                "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+              collapsed && "justify-center px-2"
+            )}
+          >
+            <FileSpreadsheet className="h-5 w-5 shrink-0" />
+            {!collapsed && (
+              <span className="ml-3">
+                {isUser ? "My Tasks" : "Manage Tasks"}
+              </span>
+            )}
+          </Link>
 
           <Link
             to="/password"

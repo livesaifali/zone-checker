@@ -33,8 +33,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// Modify AdminRoute to handle both superadmin and admin roles
-const AdminRoute = ({ children, requireSuperAdmin = false }: { children: React.ReactNode, requireSuperAdmin?: boolean }) => {
+// Route protection for different roles
+const RoleProtectedRoute = ({ 
+  children, 
+  allowedRoles 
+}: { 
+  children: React.ReactNode, 
+  allowedRoles: ('superadmin' | 'admin' | 'user')[] 
+}) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -42,18 +48,14 @@ const AdminRoute = ({ children, requireSuperAdmin = false }: { children: React.R
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        setIsAuthorized(
-          requireSuperAdmin 
-            ? user.role === 'superadmin'
-            : ['superadmin', 'admin'].includes(user.role)
-        );
+        setIsAuthorized(allowedRoles.includes(user.role));
       } catch (e) {
         setIsAuthorized(false);
       }
     } else {
       setIsAuthorized(false);
     }
-  }, [requireSuperAdmin]);
+  }, [allowedRoles]);
 
   if (isAuthorized === null) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -101,11 +103,11 @@ const App = () => (
               path="/users" 
               element={
                 <ProtectedRoute>
-                  <AdminRoute requireSuperAdmin>
+                  <RoleProtectedRoute allowedRoles={['superadmin']}>
                     <Layout>
                       <ManageUsers />
                     </Layout>
-                  </AdminRoute>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
@@ -115,11 +117,9 @@ const App = () => (
               path="/tasks" 
               element={
                 <ProtectedRoute>
-                  <AdminRoute>
-                    <Layout>
-                      <Tasks />
-                    </Layout>
-                  </AdminRoute>
+                  <Layout>
+                    <Tasks />
+                  </Layout>
                 </ProtectedRoute>
               } 
             />
@@ -128,11 +128,11 @@ const App = () => (
               path="/reports" 
               element={
                 <ProtectedRoute>
-                  <AdminRoute>
+                  <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
                     <Layout>
                       <Reports />
                     </Layout>
-                  </AdminRoute>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               } 
             />
