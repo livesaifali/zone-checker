@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +9,7 @@ import {
   Check, 
   Clock, 
   MessageSquare, 
-  Refresh,
+  RefreshCw,
   CheckCheck,
   Users
 } from 'lucide-react';
@@ -41,7 +40,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const [commentInputs, setCommentInputs] = useState<{[key: number]: string}>({});
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   
-  // Filter tasks based on user's zone if they are a regular user
   const filteredTasks = userConcernId && isUser
     ? tasks.filter(task => task.assignedZones.includes(userConcernId))
     : tasks;
@@ -82,7 +80,7 @@ const TaskList: React.FC<TaskListProps> = ({
       case 'completed':
         return <CheckCheck className="h-4 w-4 mr-1" />;
       case 'updated':
-        return <Refresh className="h-4 w-4 mr-1" />;
+        return <RefreshCw className="h-4 w-4 mr-1" />;
       default:
         return <Clock className="h-4 w-4 mr-1" />;
     }
@@ -122,7 +120,6 @@ const TaskList: React.FC<TaskListProps> = ({
               </div>
             )}
             
-            {/* Show existing comments if any */}
             {task.comments && task.comments.length > 0 && (
               <div className="mt-4 pt-3 border-t">
                 <h4 className="text-sm font-medium mb-2">Comments:</h4>
@@ -161,7 +158,7 @@ const TaskList: React.FC<TaskListProps> = ({
                     </SelectItem>
                     <SelectItem value="updated">
                       <div className="flex items-center">
-                        <Refresh className="h-4 w-4 mr-2" />
+                        <RefreshCw className="h-4 w-4 mr-2" />
                         Updated
                       </div>
                     </SelectItem>
