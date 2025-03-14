@@ -11,22 +11,43 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { zoneService } from '@/services/api';
 
 interface AddZoneDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (zoneName: string) => void;
+  onSuccess: () => void;
 }
 
-export function AddZoneDialog({ isOpen, onClose, onAdd }: AddZoneDialogProps) {
+export function AddZoneDialog({ isOpen, onClose, onSuccess }: AddZoneDialogProps) {
   const [zoneName, setZoneName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (zoneName.trim()) {
-      onAdd(zoneName.trim());
+    if (!zoneName.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await zoneService.create(zoneName.trim());
       setZoneName('');
       onClose();
+      onSuccess();
+      toast({
+        title: "Zone added",
+        description: `${zoneName} has been added successfully`,
+      });
+    } catch (error) {
+      console.error('Error adding zone:', error);
+      toast({
+        title: "Error adding zone",
+        description: "An error occurred while adding the zone",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,10 +100,12 @@ export function AddZoneDialog({ isOpen, onClose, onAdd }: AddZoneDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!zoneName.trim()}>Add City</Button>
+            <Button type="submit" disabled={!zoneName.trim() || isSubmitting}>
+              {isSubmitting ? "Adding..." : "Add City"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

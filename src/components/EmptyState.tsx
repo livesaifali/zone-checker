@@ -1,14 +1,15 @@
 
-import { FolderPlus, FileSpreadsheet } from 'lucide-react';
+import { FolderPlus, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
 
 interface EmptyStateProps {
   onAddZone: () => void;
+  onRefresh?: () => void;
   isAdmin?: boolean;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ onAddZone, isAdmin = false }) => {
+const EmptyState: React.FC<EmptyStateProps> = ({ onAddZone, onRefresh, isAdmin = false }) => {
   const location = useLocation();
   const isTasksPage = location.pathname === '/' || location.pathname === '/tasks';
   
@@ -33,21 +34,29 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onAddZone, isAdmin = false }) =
             ? "No tasks are assigned to you or match your search criteria."
             : "No zones are assigned to you or match your search criteria."}
       </p>
-      {isAdmin && (
-        <Button onClick={onAddZone} className="animate-float">
-          {isTasksPage ? (
-            <>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Create Your First Task
-            </>
-          ) : (
-            <>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              Add Your First Zone
-            </>
-          )}
-        </Button>
-      )}
+      <div className="flex gap-3">
+        {onRefresh && (
+          <Button variant="outline" onClick={onRefresh} className="animate-float">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh Data
+          </Button>
+        )}
+        {isAdmin && (
+          <Button onClick={onAddZone} className="animate-float">
+            {isTasksPage ? (
+              <>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Create Your First Task
+              </>
+            ) : (
+              <>
+                <FolderPlus className="mr-2 h-4 w-4" />
+                Add Your First Zone
+              </>
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

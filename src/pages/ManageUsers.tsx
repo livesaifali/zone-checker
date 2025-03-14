@@ -14,16 +14,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Edit, Trash, Search, Eye, EyeOff, KeyRound } from "lucide-react";
+import axios from 'axios';
 import { format } from "date-fns";
+
+const API_URL = 'http://localhost:5000'; // Update this to your actual backend URL
 
 interface User {
   id: number;
   username: string;
-  password: string;
+  password?: string;
   role: string;
   concernId: string;
   lastLogin?: string;
   email?: string;
+}
+
+interface City {
+  id: number;
+  name: string;
+  concernId: string;
 }
 
 const ManageUsers = () => {
@@ -34,7 +43,7 @@ const ManageUsers = () => {
   const [isEditingUser, setIsEditingUser] = useState<number | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState<number | null>(null);
   const [passwordVisibility, setPasswordVisibility] = useState<{[key: number]: boolean}>({});
-  const [cities, setCities] = useState<{id: number; name: string; concernId: string}[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [newUser, setNewUser] = useState<Partial<User>>({
     username: "",
     password: "",
@@ -49,30 +58,56 @@ const ManageUsers = () => {
   });
   const { toast } = useToast();
 
+  const getToken = () => localStorage.getItem('token');
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/users`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      
+      const formattedUsers = response.data.map((user: any) => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        concernId: user.concern_id,
+        lastLogin: user.last_login ? format(new Date(user.last_login), 'yyyy-MM-dd') : undefined,
+        email: user.email
+      }));
+      
+      setUsers(formattedUsers);
+      setFilteredUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error fetching users",
+        description: "Failed to load user data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchCities = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/cities`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      
+      const formattedCities = response.data.map((city: any) => ({
+        id: city.id,
+        name: city.name,
+        concernId: city.concern_id
+      }));
+      
+      setCities(formattedCities);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  };
+
   useEffect(() => {
-    // Mock data for now - this would be a database fetch in production
-    const mockUsers: User[] = [
-      { id: 1, username: "admin", password: "admin123", role: "admin", concernId: "ADMIN", lastLogin: "2023-09-15", email: "admin@example.com" },
-      { id: 2, username: "karachi", password: "user123", role: "user", concernId: "KHI001", lastLogin: "2023-09-10", email: "karachi@example.com" },
-      { id: 3, username: "lahore", password: "user123", role: "user", concernId: "LHR001", lastLogin: "2023-09-08", email: "lahore@example.com" },
-      { id: 4, username: "islamabad", password: "user123", role: "user", concernId: "ISB001", lastLogin: "2023-09-05", email: "islamabad@example.com" },
-    ];
-
-    setUsers(mockUsers);
-    setFilteredUsers(mockUsers);
-
-    // Mock cities data
-    const mockCities = [
-      { id: 1, name: "Karachi", concernId: "KHI001" },
-      { id: 2, name: "Lahore", concernId: "LHR001" },
-      { id: 3, name: "Islamabad", concernId: "ISB001" },
-      { id: 4, name: "Hyderabad", concernId: "HYD001" },
-      { id: 5, name: "Sukkur", concernId: "SUK001" },
-      { id: 6, name: "Larkana", concernId: "LRK001" },
-      { id: 7, name: "Rawalpindi", concernId: "RWP001" },
-      { id: 8, name: "Head Office", concernId: "HQ001" },
-    ];
-    setCities(mockCities);
+    fetchUsers();
+    fetchCities();
   }, []);
 
   useEffect(() => {
@@ -96,7 +131,7 @@ const ManageUsers = () => {
     }));
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!isChangingPassword) return;
 
     if (!newPassword.current || !newPassword.new || !newPassword.confirm) {
@@ -117,38 +152,38 @@ const ManageUsers = () => {
       return;
     }
 
-    const user = users.find(u => u.id === isChangingPassword);
-    if (!user || user.password !== newPassword.current) {
+    try {
+      await axios.put(`${API_URL}/api/users/${isChangingPassword}/change-password`, {
+        currentPassword: newPassword.current,
+        newPassword: newPassword.new
+      }, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+
+      setIsChangingPassword(null);
+      setNewPassword({
+        current: "",
+        new: "",
+        confirm: ""
+      });
+
       toast({
-        title: "Incorrect password",
-        description: "Current password is incorrect",
+        title: "Password updated",
+        description: "User password has been updated successfully",
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error updating password",
+        description: "Current password may be incorrect or server error",
         variant: "destructive",
       });
-      return;
     }
-
-    setUsers(
-      users.map(user => 
-        user.id === isChangingPassword 
-          ? { ...user, password: newPassword.new } 
-          : user
-      )
-    );
-
-    setIsChangingPassword(null);
-    setNewPassword({
-      current: "",
-      new: "",
-      confirm: ""
-    });
-
-    toast({
-      title: "Password updated",
-      description: "User password has been updated successfully",
-    });
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newUser.username || !newUser.password || !newUser.concernId) {
       toast({
         title: "Missing information",
@@ -158,40 +193,43 @@ const ManageUsers = () => {
       return;
     }
 
-    const userExists = users.some(user => user.username === newUser.username);
-    if (userExists) {
+    try {
+      await axios.post(`${API_URL}/api/users`, {
+        username: newUser.username,
+        password: newUser.password,
+        email: newUser.email,
+        role: newUser.role,
+        concern_id: newUser.concernId
+      }, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+
+      setIsAddingUser(false);
+      setNewUser({
+        username: "",
+        password: "",
+        role: "user",
+        concernId: "",
+        email: "",
+      });
+
       toast({
-        title: "Username taken",
-        description: "Please choose a different username",
+        title: "User added",
+        description: `${newUser.username} has been added successfully`,
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error adding user:', error);
+      toast({
+        title: "Error adding user",
+        description: "Username may already exist or server error",
         variant: "destructive",
       });
-      return;
     }
-
-    const newUserId = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    const userToAdd = {
-      ...newUser,
-      id: newUserId,
-      role: newUser.role || "user",
-    } as User;
-
-    setUsers([...users, userToAdd]);
-    setIsAddingUser(false);
-    setNewUser({
-      username: "",
-      password: "",
-      role: "user",
-      concernId: "",
-      email: "",
-    });
-
-    toast({
-      title: "User added",
-      description: `${userToAdd.username} has been added successfully`,
-    });
   };
 
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!isEditingUser) return;
 
     if (!newUser.username || !newUser.concernId) {
@@ -203,44 +241,72 @@ const ManageUsers = () => {
       return;
     }
 
-    setUsers(
-      users.map(user => 
-        user.id === isEditingUser 
-          ? { ...user, ...newUser, password: newUser.password || user.password } 
-          : user
-      )
-    );
+    try {
+      await axios.put(`${API_URL}/api/users/${isEditingUser}`, {
+        username: newUser.username,
+        password: newUser.password,
+        email: newUser.email,
+        role: newUser.role,
+        concern_id: newUser.concernId
+      }, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
 
-    setIsEditingUser(null);
-    setNewUser({
-      username: "",
-      password: "",
-      role: "user",
-      concernId: "",
-      email: "",
-    });
+      setIsEditingUser(null);
+      setNewUser({
+        username: "",
+        password: "",
+        role: "user",
+        concernId: "",
+        email: "",
+      });
 
-    toast({
-      title: "User updated",
-      description: `User has been updated successfully`,
-    });
+      toast({
+        title: "User updated",
+        description: `User has been updated successfully`,
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Error updating user",
+        description: "Server error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteUser = (id: number) => {
-    if (id === 1) { // Prevent deleting the main admin
+  const handleDeleteUser = async (id: number) => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (id === currentUser.id) {
       toast({
         title: "Cannot delete",
-        description: "The main administrator account cannot be deleted",
+        description: "You cannot delete your own account",
         variant: "destructive",
       });
       return;
     }
 
-    setUsers(users.filter(user => user.id !== id));
-    toast({
-      title: "User deleted",
-      description: "User has been deleted successfully",
-    });
+    try {
+      await axios.delete(`${API_URL}/api/users/${id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      
+      toast({
+        title: "User deleted",
+        description: "User has been deleted successfully",
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error deleting user",
+        description: "Server error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   const startEditUser = (user: User) => {
@@ -408,7 +474,7 @@ const ManageUsers = () => {
                   <Select 
                     value={newUser.role} 
                     onValueChange={(value) => setNewUser({...newUser, role: value})}
-                    disabled={isEditingUser === 1} // Cannot change role of main admin
+                    disabled={isEditingUser === 1}
                   >
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select role" />
@@ -501,7 +567,6 @@ const ManageUsers = () => {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Username</TableHead>
-              <TableHead>Password</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>City ID</TableHead>
@@ -554,7 +619,7 @@ const ManageUsers = () => {
                       variant="outline" 
                       size="icon" 
                       onClick={() => handleDeleteUser(user.id)}
-                      disabled={user.id === 1} // Prevent deleting main admin
+                      disabled={user.id === 1}
                     >
                       <Trash className="h-4 w-4" />
                     </Button>
