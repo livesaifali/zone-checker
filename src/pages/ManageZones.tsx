@@ -7,6 +7,7 @@ import EmptyState from '@/components/EmptyState';
 import ZoneStats from '@/components/ZoneStats';
 import AppHeader from '@/components/AppHeader';
 import { useToast } from '@/hooks/use-toast';
+import { zoneService } from '@/services/api';
 import type { Zone, User } from '@/types';
 
 const ManageZones = () => {
@@ -16,10 +17,11 @@ const ManageZones = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeZoneId, setActiveZoneId] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Load user from localStorage
   useEffect(() => {
-    // Load user from localStorage
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
       try {
@@ -31,8 +33,34 @@ const ManageZones = () => {
     }
   }, []);
 
+  // Fetch zones from API
+  const fetchZones = async () => {
+    setIsLoading(true);
+    try {
+      const data = await zoneService.getAll();
+      if (Array.isArray(data)) {
+        setZones(data);
+        setFilteredZones(data);
+      } else {
+        // Fallback to example data if API fails
+        loadExampleData();
+      }
+    } catch (error) {
+      console.error('Error fetching zones:', error);
+      // Fallback to example data if API fails
+      loadExampleData();
+      toast({
+        title: "Error loading zones",
+        description: "Using example data instead",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Example initial data - can be replaced with actual API calls
-  useEffect(() => {
+  const loadExampleData = () => {
     const initialZones: Zone[] = [
       { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
       { id: 2, name: 'Lahore', status: 'pending', comment: 'Need to verify dimensions', concernId: 'LHR001', updatedBy: 'user123', lastUpdated: '2023-08-15' },
@@ -45,8 +73,14 @@ const ManageZones = () => {
     ];
     setZones(initialZones);
     setFilteredZones(initialZones);
+  };
+
+  // Initialize data
+  useEffect(() => {
+    fetchZones();
   }, []);
 
+  // Filter zones based on search and user role
   useEffect(() => {
     if (!currentUser) return;
 
@@ -55,20 +89,24 @@ const ManageZones = () => {
     // Filter by search term if provided
     if (searchTerm) {
       filtered = filtered.filter(zone => 
-        zone.name.toLowerCase().includes(searchTerm.toLowerCase())
+        zone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        zone.concernId.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
     // If user is not admin, only show their assigned city
     if (currentUser.role === 'user') {
       filtered = filtered.filter(zone => 
-        zone.concernId === currentUser.concernId || zone.status === 'pending'
+        zone.concernId === currentUser.concernId || 
+        zone.status === 'pending' || 
+        zone.status === 'updated'
       );
     }
     
     setFilteredZones(filtered);
   }, [searchTerm, zones, currentUser]);
 
+  // Add a new zone (local state management before API integration)
   const handleAddZone = (name: string) => {
     if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) {
       toast({
@@ -115,13 +153,14 @@ const ManageZones = () => {
       });
       return;
     }
-    
+
+    // Update zone status locally
     setZones(
       zones.map(zone => 
         zone.id === id 
           ? { 
               ...zone, 
-              status: status as 'pending' | 'uploaded',
+              status: status as 'pending' | 'updated' | 'uploaded',
               updatedBy: currentUser.username,
               lastUpdated: new Date().toISOString().split('T')[0]
             } 
@@ -129,10 +168,21 @@ const ManageZones = () => {
       )
     );
     
-    toast({
-      title: "Status updated",
-      description: `Status updated to ${status}`,
-    });
+    // Update status via API
+    try {
+      zoneService.updateStatus(id, status, zone?.comment || '');
+      toast({
+        title: "Status updated",
+        description: `Status updated to ${status}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error updating status",
+        description: "Failed to update status on the server",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCommentChange = (id: number, comment: string) => {
@@ -160,15 +210,32 @@ const ManageZones = () => {
         } : zone
       )
     );
+
+    // Update comment via API
+    try {
+      if (zone?.status) {
+        zoneService.updateStatus(id, zone.status, comment);
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    }
   };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
 
+  const handleRefresh = () => {
+    fetchZones();
+    toast({
+      title: "Data refreshed",
+      description: "Zone data has been refreshed",
+    });
+  };
+
   // Calculate stats
   const totalZones = filteredZones.length;
-  const pendingZones = filteredZones.filter(zone => zone.status === 'pending').length;
+  const pendingZones = filteredZones.filter(zone => zone.status === 'pending' || zone.status === 'updated').length;
   const uploadedZones = filteredZones.filter(zone => zone.status === 'uploaded').length;
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
@@ -181,6 +248,7 @@ const ManageZones = () => {
         <ChecklistHeader 
           onAddZone={() => setIsAddingZone(true)} 
           onSearch={handleSearch}
+          onRefresh={handleRefresh}
           isAdmin={isAdmin}
         />
         
@@ -193,7 +261,11 @@ const ManageZones = () => {
         )}
         
         {filteredZones.length === 0 && (
-          <EmptyState onAddZone={() => setIsAddingZone(true)} isAdmin={isAdmin} />
+          <EmptyState 
+            onAddZone={() => setIsAddingZone(true)} 
+            onRefresh={handleRefresh}
+            isAdmin={isAdmin} 
+          />
         )}
         
         {filteredZones.length > 0 && (

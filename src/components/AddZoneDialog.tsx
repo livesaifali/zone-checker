@@ -17,10 +17,11 @@ import { zoneService } from '@/services/api';
 interface AddZoneDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  onAdd?: (name: string) => void;
 }
 
-export function AddZoneDialog({ isOpen, onClose, onSuccess }: AddZoneDialogProps) {
+export function AddZoneDialog({ isOpen, onClose, onSuccess, onAdd }: AddZoneDialogProps) {
   const [zoneName, setZoneName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -31,14 +32,22 @@ export function AddZoneDialog({ isOpen, onClose, onSuccess }: AddZoneDialogProps
     
     setIsSubmitting(true);
     try {
-      await zoneService.create(zoneName.trim());
-      setZoneName('');
-      onClose();
-      onSuccess();
-      toast({
-        title: "Zone added",
-        description: `${zoneName} has been added successfully`,
-      });
+      if (onAdd) {
+        // Local state handling
+        onAdd(zoneName.trim());
+        setZoneName('');
+        onClose();
+      } else {
+        // API handling
+        await zoneService.create(zoneName.trim());
+        setZoneName('');
+        onClose();
+        if (onSuccess) onSuccess();
+        toast({
+          title: "Zone added",
+          description: `${zoneName} has been added successfully`,
+        });
+      }
     } catch (error) {
       console.error('Error adding zone:', error);
       toast({

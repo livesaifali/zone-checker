@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface StatusUpdate {
-  status: 'pending' | 'uploaded' | null;
+  status: 'pending' | 'updated' | 'uploaded' | null;
   updatedBy: string;
   timestamp: string;
   comment?: string;
@@ -22,7 +22,7 @@ interface ZoneCardProps {
   name: string;
   concernId: string;
   isActive: boolean;
-  status: 'pending' | 'uploaded' | null;
+  status: 'pending' | 'updated' | 'uploaded' | null;
   comment: string;
   updatedBy?: string;
   lastUpdated?: string;
@@ -56,7 +56,7 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
   // Format current date for display
   const currentDate = format(new Date(), 'MMMM d, yyyy');
 
-  const handleStatusChange = (newStatus: 'pending' | 'uploaded') => {
+  const handleStatusChange = (newStatus: 'pending' | 'updated' | 'uploaded') => {
     if (!isEditable) {
       toast({
         title: "Access denied",
@@ -128,10 +128,12 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
                             <Badge 
                               variant={update.status === 'uploaded' ? 'default' : 'outline'}
                               className={cn(
-                                update.status === 'uploaded' ? "bg-green-500" : "bg-amber-500"
+                                update.status === 'uploaded' ? "bg-green-500" : 
+                                update.status === 'updated' ? "bg-blue-500" : "bg-amber-500"
                               )}
                             >
-                              {update.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                              {update.status === 'uploaded' ? 'Uploaded' : 
+                               update.status === 'updated' ? 'Updated' : 'Pending'}
                             </Badge>
                             <span className="text-xs text-muted-foreground">{update.timestamp}</span>
                           </div>
@@ -176,6 +178,23 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
             >
               <AlertTriangle className="mr-1 h-4 w-4" />
               Pending
+            </Button>
+            
+            <Button 
+              variant={status === 'updated' ? 'default' : 'outline'} 
+              size="sm" 
+              className={cn(
+                "flex-1 transition-all duration-300",
+                status === 'updated' ? "bg-blue-500 hover:bg-blue-600" : ""
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange('updated');
+              }}
+              disabled={!isEditable}
+            >
+              <Check className="mr-1 h-4 w-4" />
+              Updated
             </Button>
             
             <Button 
@@ -265,6 +284,11 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
                     <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
                     Pending Status
                   </>
+                ) : status === 'updated' ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1 text-blue-500" />
+                    Updated Status
+                  </>
                 ) : (
                   <>
                     <Check className="h-3 w-3 mr-1 text-green-500" />
@@ -289,6 +313,8 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
               <div className="text-xs text-muted-foreground">
                 {status === 'pending' 
                   ? "This city is currently pending updates."
+                  : status === 'updated'
+                  ? "This city has been updated."
                   : "This city's data has been uploaded."}
               </div>
             </div>
