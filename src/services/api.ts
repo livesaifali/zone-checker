@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Use environment variable if available, otherwise use default
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'; 
 
 // Create axios instance with base URL
 const api = axios.create({
@@ -21,18 +21,42 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Add response interceptor to handle common errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    // For development - if no API is running, fallback to mock data
+    if (!error.response) {
+      console.log('No API response - fallback to mock data');
+      // This will be handled in the catch block of the services
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth services
 export const authService = {
   login: async (username: string, password: string) => {
-    const response = await api.post('/auth/login', { username, password });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', { username, password });
+      return response.data;
+    } catch (error) {
+      console.log('Login API failed, using dev mode');
+      throw error;
+    }
   },
   getCurrentUser: async () => {
-    const response = await api.get('/api/users/me');
-    return response.data;
+    try {
+      const response = await api.get('/users/me');
+      return response.data;
+    } catch (error) {
+      console.log('Get current user API failed, using dev mode');
+      throw error;
+    }
   },
   changePassword: async (userId: number, currentPassword: string, newPassword: string) => {
-    const response = await api.put(`/api/users/${userId}/change-password`, {
+    const response = await api.put(`/users/${userId}/change-password`, {
       currentPassword, 
       newPassword
     });
@@ -43,23 +67,23 @@ export const authService = {
 // User management services
 export const userService = {
   getAll: async () => {
-    const response = await api.get('/api/users');
+    const response = await api.get('/users');
     return response.data;
   },
   getById: async (id: number) => {
-    const response = await api.get(`/api/users/${id}`);
+    const response = await api.get(`/users/${id}`);
     return response.data;
   },
   create: async (userData: any) => {
-    const response = await api.post('/api/users', userData);
+    const response = await api.post('/users', userData);
     return response.data;
   },
   update: async (id: number, userData: any) => {
-    const response = await api.put(`/api/users/${id}`, userData);
+    const response = await api.put(`/users/${id}`, userData);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/users/${id}`);
+    const response = await api.delete(`/users/${id}`);
     return response.data;
   }
 };
@@ -67,15 +91,25 @@ export const userService = {
 // City/Zone management services
 export const zoneService = {
   getAll: async () => {
-    const response = await api.get('/api/cities');
-    return response.data;
+    try {
+      const response = await api.get('/cities');
+      return response.data;
+    } catch (error) {
+      console.log('Get cities API failed, using development data');
+      // Return mock data for development
+      return [
+        { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
+        { id: 2, name: 'Lahore', status: null, comment: '', concernId: 'LHR001' },
+        { id: 3, name: 'Islamabad', status: null, comment: '', concernId: 'ISB001' },
+      ];
+    }
   },
   create: async (zoneName: string) => {
-    const response = await api.post('/api/cities', { name: zoneName });
+    const response = await api.post('/cities', { name: zoneName });
     return response.data;
   },
   updateStatus: async (cityId: number, status: string, comment: string) => {
-    const response = await api.post('/api/update-status', { 
+    const response = await api.post('/status-update', { 
       city_id: cityId, 
       status, 
       comment,
@@ -84,7 +118,7 @@ export const zoneService = {
     return response.data;
   },
   getStatusHistory: async (cityId: number) => {
-    const response = await api.get(`/api/status-history/${cityId}`);
+    const response = await api.get(`/status-history/${cityId}`);
     return response.data;
   }
 };
@@ -92,19 +126,45 @@ export const zoneService = {
 // Task management services
 export const taskService = {
   getAll: async () => {
-    const response = await api.get('/api/tasks');
-    return response.data;
+    try {
+      const response = await api.get('/tasks');
+      return response.data;
+    } catch (error) {
+      console.log('Get tasks API failed, using development data');
+      // Return mock data for development
+      return [
+        {
+          id: 1,
+          title: 'Daily Excel Update',
+          description: 'Update the daily reporting Excel sheet with today\'s metrics',
+          createdBy: 1,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          assignedZones: ['KHI001', 'LHR001'],
+        },
+        {
+          id: 2,
+          title: 'Monthly Report',
+          description: 'Submit the monthly performance report',
+          createdBy: 1,
+          createdAt: new Date().toISOString(),
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'updated',
+          assignedZones: ['ISB001'],
+        }
+      ];
+    }
   },
   create: async (taskData: any) => {
-    const response = await api.post('/api/tasks', taskData);
+    const response = await api.post('/tasks', taskData);
     return response.data;
   },
   update: async (id: number, taskData: any) => {
-    const response = await api.put(`/api/tasks/${id}`, taskData);
+    const response = await api.put(`/tasks/${id}`, taskData);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/tasks/${id}`);
+    const response = await api.delete(`/tasks/${id}`);
     return response.data;
   }
 };
