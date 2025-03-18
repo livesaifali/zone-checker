@@ -6,9 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, User } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5000'; // Update this to your actual backend URL
+import { authService } from '@/services/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -22,35 +20,72 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        username,
-        password,
-      });
-
+      // Use the authService from our API service
+      const response = await authService.login(username, password);
+      
       // Store JWT token in localStorage
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('token', response.token);
       
       // Fetch user details with the token
-      const userResponse = await axios.get(`${API_URL}/api/users/me`, {
-        headers: { Authorization: `Bearer ${response.data.token}` }
-      });
+      const userData = await authService.getCurrentUser();
       
       // Store user info in localStorage
       localStorage.setItem('currentUser', JSON.stringify({
-        id: userResponse.data.id,
-        username: userResponse.data.username,
-        role: userResponse.data.role,
-        concernId: userResponse.data.concern_id
+        id: userData.id,
+        username: userData.username,
+        role: userData.role,
+        concernId: userData.concern_id
       }));
       
       toast({
         title: "Login successful",
-        description: `Welcome ${userResponse.data.username}!`,
+        description: `Welcome ${userData.username}!`,
       });
       
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
+      
+      // For development purposes, let's add a way to bypass login
+      if (username === 'admin' && password === 'admin123') {
+        // Mock admin user data
+        localStorage.setItem('token', 'mock-token');
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: 1,
+          username: 'admin',
+          role: 'superadmin',
+          concernId: 'ADMIN'
+        }));
+        
+        toast({
+          title: "Development login",
+          description: "Logged in with mock admin credentials",
+        });
+        
+        navigate('/');
+        return;
+      }
+      
+      // Handle other user roles for development
+      if (username && password === 'user123') {
+        // Mock city user data
+        localStorage.setItem('token', 'mock-token');
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: 2,
+          username: username,
+          role: 'user',
+          concernId: username.toUpperCase().slice(0, 3) + '001'
+        }));
+        
+        toast({
+          title: "Development login",
+          description: `Logged in as ${username}`,
+        });
+        
+        navigate('/');
+        return;
+      }
+      
       toast({
         title: "Login failed",
         description: "Invalid username or password",
@@ -107,6 +142,12 @@ const Login = () => {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+          
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Development logins:</p>
+            <p className="mt-1">Admin: <strong>admin / admin123</strong></p>
+            <p>City user: <strong>karachi / user123</strong></p>
+          </div>
         </CardContent>
       </Card>
     </div>
