@@ -49,10 +49,9 @@ const TaskList: React.FC<TaskListProps> = ({
   const [commentInputs, setCommentInputs] = useState<{[key: number]: string}>({});
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
-  const [showHistory, setShowHistory] = useState<boolean>(false);
   
   const filteredTasks = userConcernId && isUser
-    ? tasks.filter(task => task.assignedZones.includes(userConcernId))
+    ? tasks.filter(task => task.assignedZones && task.assignedZones.includes(userConcernId))
     : tasks;
 
   if (filteredTasks.length === 0) {
@@ -98,6 +97,14 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMMM d, yyyy');
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {filteredTasks.map((task) => (
@@ -135,7 +142,10 @@ const TaskList: React.FC<TaskListProps> = ({
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-1 flex items-center">
               <Calendar className="h-3 w-3 mr-1" />
-              <span>{format(new Date(task.createdAt), 'MMMM d, yyyy')}</span>
+              <span>{formatDate(task.createdAt)}</span>
+              {task.createdByUsername && (
+                <span className="ml-2">by {task.createdByUsername}</span>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-2">
@@ -143,7 +153,7 @@ const TaskList: React.FC<TaskListProps> = ({
             {task.dueDate && (
               <div className="mt-2 text-sm text-muted-foreground flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
-                Due: {new Date(task.dueDate).toLocaleDateString()}
+                Due: {formatDate(task.dueDate)}
               </div>
             )}
             {task.assignedZones && task.assignedZones.length > 0 && (
@@ -242,7 +252,7 @@ const TaskList: React.FC<TaskListProps> = ({
                       <div className="font-medium text-sm">{comment.userName}</div>
                       <div className="text-sm">{comment.comment}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(comment.createdAt).toLocaleString()}
+                        {formatDate(comment.createdAt)}
                       </div>
                     </div>
                   ))}

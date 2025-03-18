@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +51,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     const newTask = {
       title: taskTitle,
       description: taskDescription,
-      createdBy: 1, // This should be the actual admin ID
       status: 'pending' as const,
       assignedZones: selectedZones,
       dueDate: dueDate || undefined,

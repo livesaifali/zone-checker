@@ -86,6 +86,11 @@ INSERT INTO users (username, password, role, concern_id, email)
 VALUES ('admin', 'admin123', 'superadmin', 'ADMIN', 'admin@example.com')
 ON DUPLICATE KEY UPDATE role='superadmin';
 
+-- Insert an additional normal admin user
+INSERT INTO users (username, password, role, concern_id, email) 
+VALUES ('manager', 'manager123', 'admin', 'MANAGER', 'manager@example.com')
+ON DUPLICATE KEY UPDATE role='admin';
+
 -- Insert initial cities
 INSERT INTO cities (name, concern_id) 
 VALUES 
@@ -96,7 +101,11 @@ VALUES
   ('Sukkur', 'SUK001'),
   ('Larkana', 'LRK001'),
   ('Rawalpindi', 'RWP001'),
-  ('Head Office', 'HQ001')
+  ('Head Office', 'HQ001'),
+  ('Peshawar', 'PSH001'),
+  ('Quetta', 'QTA001'),
+  ('Multan', 'MUL001'),
+  ('Faisalabad', 'FSD001')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 -- Insert city users
@@ -104,5 +113,8 @@ INSERT INTO users (username, password, role, concern_id, email)
 VALUES 
   ('karachi', 'user123', 'user', 'KHI001', 'karachi@example.com'),
   ('lahore', 'user123', 'user', 'LHR001', 'lahore@example.com'),
-  ('islamabad', 'user123', 'user', 'ISB001', 'islamabad@example.com')
+  ('islamabad', 'user123', 'user', 'ISB001', 'islamabad@example.com'),
+  ('hyderabad', 'user123', 'user', 'HYD001', 'hyderabad@example.com'),
+  ('sukkur', 'user123', 'user', 'SUK001', 'sukkur@example.com'),
+  ('peshawar', 'user123', 'user', 'PSH001', 'peshawar@example.com')
 ON DUPLICATE KEY UPDATE role='user';

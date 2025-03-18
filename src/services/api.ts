@@ -107,12 +107,28 @@ export const taskService = {
     const response = await api.post('/tasks', taskData);
     return response.data;
   },
-  update: async (id: number, taskData: any) => {
-    const response = await api.put(`/tasks/${id}`, taskData);
+  updateStatus: async (id: number, status: string) => {
+    const response = await api.put(`/tasks/${id}/status`, { status });
+    return response.data;
+  },
+  addComment: async (id: number, comment: string) => {
+    const response = await api.post(`/tasks/${id}/comments`, { comment });
     return response.data;
   },
   delete: async (id: number) => {
     const response = await api.delete(`/tasks/${id}`);
+    return response.data;
+  }
+};
+
+// Reporting services
+export const reportService = {
+  getTaskStatusReport: async (timeframe: 'daily' | 'weekly' | '15days' | 'monthly') => {
+    const response = await api.get(`/reports/task-status?timeframe=${timeframe}`);
+    return response.data;
+  },
+  getZonePerformanceReport: async () => {
+    const response = await api.get('/reports/zone-performance');
     return response.data;
   }
 };

@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Select, 
   SelectContent, 
@@ -26,161 +27,63 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
-import { Download, Calendar, ArrowDownToLine } from 'lucide-react';
-import { format, subDays } from 'date-fns';
-
-interface Zone {
-  id: number;
-  name: string;
-  status: 'pending' | 'updated' | 'uploaded' | null;
-  comment: string;
-  concernId: string;
-  updatedBy?: string;
-  lastUpdated?: string;
-}
-
-interface ReportData {
-  name: string;
-  pending: number;
-  updated: number;
-  completed: number;
-  notStarted: number;
-  completionPercentage: number;
-}
+import { Download, Calendar, ArrowDownToLine, AlertCircle } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { zoneService, reportService } from '@/services/api';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const Reports = () => {
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [reportType, setReportType] = useState<'daily' | 'weekly' | '15day' | 'monthly'>('daily');
-  const [reportData, setReportData] = useState<ReportData[]>([]);
+  const [reportType, setReportType] = useState<'daily' | 'weekly' | '15days' | 'monthly'>('daily');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString());
   const { toast } = useToast();
 
-  useEffect(() => {
-    // This would be a database fetch in real app
-    const initialZones: Zone[] = [
-      { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
-      { id: 2, name: 'Lahore', status: 'pending', comment: 'Need to verify dimensions', concernId: 'LHR001', updatedBy: 'user123', lastUpdated: '2023-08-15' },
-      { id: 3, name: 'Islamabad', status: 'uploaded', comment: 'All materials uploaded', concernId: 'ISB001', updatedBy: 'admin', lastUpdated: '2023-08-10' },
-      { id: 4, name: 'Hyderabad', status: 'updated', comment: 'Updated but pending review', concernId: 'HYD001', updatedBy: 'user789', lastUpdated: '2023-09-01' },
-      { id: 5, name: 'Sukkur', status: 'pending', comment: 'Waiting for inventory list', concernId: 'SUK001', updatedBy: 'user456', lastUpdated: '2023-08-05' },
-      { id: 6, name: 'Larkana', status: null, comment: '', concernId: 'LRK001' },
-      { id: 7, name: 'Rawalpindi', status: 'uploaded', comment: 'Completed last week', concernId: 'RWP001', updatedBy: 'user123', lastUpdated: '2023-08-20' },
-      { id: 8, name: 'Head Office', status: 'uploaded', comment: 'Completed', concernId: 'HQ001', updatedBy: 'admin', lastUpdated: '2023-08-01' },
-    ];
-    setZones(initialZones);
-  }, []);
+  // Fetch zones from API
+  const { 
+    data: zones = [], 
+    isLoading: isLoadingZones,
+    error: zonesError 
+  } = useQuery({
+    queryKey: ['zones'],
+    queryFn: zoneService.getAll,
+  });
 
-  useEffect(() => {
-    generateReportData();
-  }, [zones, reportType, selectedYear, selectedMonth]);
+  // Fetch task status report from API
+  const { 
+    data: taskStatusData = [], 
+    isLoading: isLoadingTaskStatus,
+    error: taskStatusError,
+    refetch: refetchTaskStatus
+  } = useQuery({
+    queryKey: ['taskStatusReport', reportType],
+    queryFn: () => reportService.getTaskStatusReport(reportType),
+  });
 
-  const generateReportData = () => {
-    // For demo purposes, we'll generate some mock data based on the zones
-    // In a real app, this would come from the database with real historical data
-    
-    const data: ReportData[] = [];
-    
-    if (reportType === 'daily') {
-      // Generate last 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        const pending = Math.floor(Math.random() * 3) + 1;
-        const updated = Math.floor(Math.random() * 2) + 1;
-        const completed = Math.floor(Math.random() * 3) + 1;
-        const notStarted = 8 - pending - updated - completed;
-        
-        data.push({
-          name: format(date, 'MMM dd'),
-          pending,
-          updated,
-          completed,
-          notStarted,
-          completionPercentage: Math.round((completed / 8) * 100)
-        });
-      }
-    } else if (reportType === 'weekly') {
-      // Generate last 4 weeks
-      for (let i = 4; i >= 1; i--) {
-        const weekNum = new Date().getMonth() * 4 + Math.floor(new Date().getDate() / 7) + 1 - i;
-        const pending = Math.floor(Math.random() * 3) + 1;
-        const updated = Math.floor(Math.random() * 2) + 1;
-        const completed = Math.floor(Math.random() * 3) + 1;
-        const notStarted = 8 - pending - updated - completed;
-        
-        data.push({
-          name: `Week ${weekNum > 0 ? weekNum : 52 + weekNum}`,
-          pending,
-          updated,
-          completed,
-          notStarted,
-          completionPercentage: Math.round((completed / 8) * 100)
-        });
-      }
-    } else if (reportType === '15day') {
-      // Generate last 15 days
-      for (let i = 14; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        const pending = Math.floor(Math.random() * 3) + 1;
-        const updated = Math.floor(Math.random() * 2) + 1;
-        const completed = Math.floor(Math.random() * 3) + 1;
-        const notStarted = 8 - pending - updated - completed;
-        
-        data.push({
-          name: format(date, 'MMM dd'),
-          pending,
-          updated,
-          completed,
-          notStarted,
-          completionPercentage: Math.round((completed / 8) * 100)
-        });
-      }
-    } else if (reportType === 'monthly') {
-      // Generate months for the selected year
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const currentMonth = new Date().getMonth();
-      
-      // Only show months up to current month for current year
-      const monthsToShow = parseInt(selectedYear) === new Date().getFullYear() 
-        ? months.slice(0, currentMonth + 1) 
-        : months;
-      
-      for (const month of monthsToShow) {
-        const pending = Math.floor(Math.random() * 3) + 1;
-        const updated = Math.floor(Math.random() * 2) + 1;
-        const completed = Math.floor(Math.random() * 4) + 2;
-        const notStarted = 8 - pending - updated - completed;
-        
-        data.push({
-          name: month,
-          pending,
-          updated,
-          completed,
-          notStarted,
-          completionPercentage: Math.round((completed / 8) * 100)
-        });
-      }
-    }
-    
-    setReportData(data);
+  // Fetch zone performance report from API
+  const { 
+    data: zonePerformanceData = [], 
+    isLoading: isLoadingZonePerformance,
+    error: zonePerformanceError 
+  } = useQuery({
+    queryKey: ['zonePerformanceReport'],
+    queryFn: reportService.getZonePerformanceReport,
+  });
+
+  const handleReportTypeChange = (value: 'daily' | 'weekly' | '15days' | 'monthly') => {
+    setReportType(value);
   };
 
   const handleDownloadReport = () => {
-    // In a real app, this would generate and download a CSV/Excel file
-    // For demo purposes, we'll just convert our data to CSV format
-    
     let csvContent = "data:text/csv;charset=utf-8,";
     
     // Add headers
-    csvContent += "Date,Pending,Updated,Completed,Not Started,Completion %\n";
+    csvContent += "Date,Pending,Updated,Total\n";
     
     // Add data rows
-    reportData.forEach(item => {
-      csvContent += `${item.name},${item.pending},${item.updated},${item.completed},${item.notStarted},${item.completionPercentage}%\n`;
+    taskStatusData.forEach((item: any) => {
+      const date = item.date ? format(new Date(item.date), 'yyyy-MM-dd') : 'N/A';
+      csvContent += `${date},${item.pending || 0},${item.updated || 0},${(item.pending || 0) + (item.updated || 0)}\n`;
     });
     
     // Create download link
@@ -200,13 +103,74 @@ const Reports = () => {
     });
   };
 
+  // Format data for charts
+  const formattedTaskStatusData = taskStatusData.map((item: any) => ({
+    name: item.date ? format(new Date(item.date), 'MMM dd') : 'N/A',
+    pending: item.pending || 0,
+    updated: item.updated || 0,
+    completionPercentage: item.total ? Math.round((item.updated / item.total) * 100) : 0
+  }));
+
   // Data for the pie chart - current status overview
   const pieData = [
-    { name: 'Completed', value: zones.filter(z => z.status === 'uploaded').length },
-    { name: 'Updated', value: zones.filter(z => z.status === 'updated').length },
-    { name: 'Pending', value: zones.filter(z => z.status === 'pending').length },
-    { name: 'Not Started', value: zones.filter(z => z.status === null).length },
+    { 
+      name: 'Completed', 
+      value: zones.filter((z: any) => z.status === 'uploaded').length 
+    },
+    { 
+      name: 'Updated', 
+      value: zones.filter((z: any) => z.status === 'updated').length 
+    },
+    { 
+      name: 'Pending', 
+      value: zones.filter((z: any) => z.status === 'pending').length 
+    },
+    { 
+      name: 'Not Started', 
+      value: zones.filter((z: any) => z.status === null).length 
+    },
   ];
+
+  // Zone performance data for bar chart
+  const zonePerformanceChartData = zonePerformanceData.map((item: any) => ({
+    name: item.zoneName,
+    total: item.totalTasks,
+    completed: item.completedTasks,
+    completion: item.totalTasks > 0 
+      ? Math.round((item.completedTasks / item.totalTasks) * 100) 
+      : 0
+  }));
+
+  // Show loading state
+  if (isLoadingZones || isLoadingTaskStatus || isLoadingZonePerformance) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Checklist Reports</h1>
+          <p className="text-muted-foreground">Loading reports...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-[300px] w-full rounded-lg" />
+          <Skeleton className="h-[300px] w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (zonesError || taskStatusError || zonePerformanceError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            There was an error loading the reports. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -219,14 +183,14 @@ const Reports = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Select value={reportType} onValueChange={(value: 'daily' | 'weekly' | '15day' | 'monthly') => setReportType(value)}>
+          <Select value={reportType} onValueChange={handleReportTypeChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Report Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="daily">Daily</SelectItem>
               <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="15day">15 Days</SelectItem>
+              <SelectItem value="15days">15 Days</SelectItem>
               <SelectItem value="monthly">Monthly</SelectItem>
             </SelectContent>
           </Select>
@@ -282,17 +246,17 @@ const Reports = () => {
         
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Upload Progress</CardTitle>
+            <CardTitle className="text-lg">Task Status Over Time</CardTitle>
             <CardDescription>
               {reportType === 'daily' ? 'Last 7 days' : 
                reportType === 'weekly' ? 'Last 4 weeks' : 
-               reportType === '15day' ? 'Last 15 days' : 'Monthly view'}
+               reportType === '15days' ? 'Last 15 days' : 'Monthly view'}
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={reportData}
+                data={formattedTaskStatusData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -302,9 +266,16 @@ const Reports = () => {
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="completionPercentage"
-                  name="Completion %"
+                  dataKey="updated"
+                  name="Updated Tasks"
                   stroke="#0088FE"
+                  activeDot={{ r: 8 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="pending"
+                  name="Pending Tasks"
+                  stroke="#FFBB28"
                   activeDot={{ r: 8 }}
                 />
               </LineChart>
@@ -313,18 +284,18 @@ const Reports = () => {
         </Card>
       </div>
       
-      {/* Detailed Report */}
+      {/* Zone Performance Report */}
       <Card>
         <CardHeader>
-          <CardTitle>Detailed Report</CardTitle>
+          <CardTitle>Zone Performance</CardTitle>
           <CardDescription>
-            Status breakdown by {reportType === 'daily' ? 'day' : reportType === 'weekly' ? 'week' : reportType === '15day' ? '15 days' : 'month'}
+            Task completion status by zone
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={reportData}
+              data={zonePerformanceChartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
@@ -332,10 +303,8 @@ const Reports = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="completed" name="Completed" stackId="a" fill="#00C49F" />
-              <Bar dataKey="updated" name="Updated" stackId="a" fill="#0088FE" />
-              <Bar dataKey="pending" name="Pending" stackId="a" fill="#FFBB28" />
-              <Bar dataKey="notStarted" name="Not Started" stackId="a" fill="#FF8042" />
+              <Bar dataKey="completed" name="Completed Tasks" fill="#00C49F" />
+              <Bar dataKey="total" name="Total Tasks" fill="#0088FE" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

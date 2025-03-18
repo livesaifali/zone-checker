@@ -2,7 +2,7 @@
 export interface User {
   id: number;
   username: string;
-  password: string;
+  password?: string;
   role: 'superadmin' | 'admin' | 'user';
   concernId: string;
   email?: string;
@@ -14,6 +14,7 @@ export interface Task {
   title: string;
   description: string;
   createdBy: number; // admin ID
+  createdByUsername?: string; // admin username
   createdAt: string;
   dueDate?: string;
   status: 'pending' | 'updated';
@@ -38,4 +39,18 @@ export interface Zone {
   concernId: string;
   updatedBy?: string;
   lastUpdated?: string;
+}
+
+export interface TaskReport {
+  date: string;
+  pending: number;
+  updated: number;
+  total: number;
+}
+
+export interface ZonePerformance {
+  zoneName: string;
+  concernId: string;
+  totalTasks: number;
+  completedTasks: number;
 }
