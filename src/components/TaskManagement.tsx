@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Task, Zone } from '@/types';
+import type { Task, Zone, User } from '@/types';
 
 interface TaskManagementProps {
   zones: Zone[];
@@ -19,7 +19,20 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
+
+  // Get current user from localStorage
+  useEffect(() => {
+    const userStr = localStorage.getItem('currentUser');
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {
+        console.error('Failed to parse user data', e);
+      }
+    }
+  }, []);
 
   const handleSelectedZonesChange = (zoneId: string) => {
     if (zoneId === 'all') {
@@ -48,12 +61,23 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
       return;
     }
 
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to create tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newTask = {
       title: taskTitle,
       description: taskDescription,
       status: 'pending' as const,
       assignedZones: selectedZones,
       dueDate: dueDate || undefined,
+      createdBy: currentUser.id, // Add the createdBy property
+      createdByUsername: currentUser.username // Add the username for display purposes
     };
 
     onTaskCreate(newTask);
