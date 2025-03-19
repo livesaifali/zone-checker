@@ -6,7 +6,7 @@ const API_URL = 'http://localhost:3000/api';
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // Increase timeout for slower connections
+  timeout: 30000, // Increase timeout for slower connections
 });
 
 // Add request interceptor to include auth token
@@ -40,7 +40,27 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Cannot connect to server. Please check your connection and make sure the backend server is running.'));
     }
     
+    // Handle authentication errors
+    if (error.response.status === 401) {
+      // Clear local storage if the token is invalid or expired
+      localStorage.removeItem('token');
+      localStorage.removeItem('currentUser');
+      
+      // If on a page that requires authentication, redirect to login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      
+      return Promise.reject(new Error('Your session has expired. Please log in again.'));
+    }
+    
     console.error('API Error:', error.response?.status, error.response?.data);
+    
+    // Return a more user-friendly error message
+    if (error.response?.data?.message) {
+      return Promise.reject(new Error(error.response.data.message));
+    }
+    
     return Promise.reject(error);
   }
 );

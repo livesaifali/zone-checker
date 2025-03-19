@@ -48,7 +48,13 @@ export const useTasks = () => {
         return await taskService.getAll();
       } catch (error: any) {
         console.error('Failed to load tasks:', error);
-        setErrorDetail(error.message || 'Failed to load tasks');
+        if (error.code === 'ECONNABORTED') {
+          setErrorDetail('Connection timeout. The server is taking too long to respond.');
+        } else if (!error.response) {
+          setErrorDetail('Cannot connect to server. Please check your connection and make sure the backend server is running.');
+        } else {
+          setErrorDetail(error.message || 'Failed to load tasks');
+        }
         throw error;
       }
     },
@@ -70,7 +76,13 @@ export const useTasks = () => {
         return await zoneService.getAll();
       } catch (error: any) {
         console.error('Failed to load zones:', error);
-        setErrorDetail(error.message || 'Failed to load zones');
+        if (error.code === 'ECONNABORTED') {
+          setErrorDetail('Connection timeout. The server is taking too long to respond.');
+        } else if (!error.response) {
+          setErrorDetail('Cannot connect to server. Please check your connection and make sure the backend server is running.');
+        } else {
+          setErrorDetail(error.message || 'Failed to load zones');
+        }
         throw error;
       }
     },
@@ -171,20 +183,80 @@ export const useTasks = () => {
       return;
     }
 
+    // Ensure admin can only create tasks
+    if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
+      toast({
+        title: "Permission denied",
+        description: "Only admins can create tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createTaskMutation.mutate(taskData);
   };
 
   const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'updated') => {
     if (!currentUser) return;
+    
+    // Check if user has permission to update this task
+    if (currentUser.role === 'user') {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || !task.assignedZones.includes(currentUser.concernId)) {
+        toast({
+          title: "Permission denied",
+          description: "You can only update tasks assigned to your zone",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     updateTaskStatusMutation.mutate({ taskId, status: newStatus });
   };
 
   const handleTaskCommentUpdate = (taskId: number, comment: string) => {
     if (!currentUser) return;
+    
+    // Check if user has permission to comment on this task
+    if (currentUser.role === 'user') {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || !task.assignedZones.includes(currentUser.concernId)) {
+        toast({
+          title: "Permission denied",
+          description: "You can only comment on tasks assigned to your zone",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     addTaskCommentMutation.mutate({ taskId, comment });
   };
 
   const handleDeleteTask = (taskId: number) => {
+    if (!currentUser) return;
+    
+    // Check if user has permission to delete this task
+    if (currentUser.role === 'admin') {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || task.createdBy !== currentUser.id) {
+        toast({
+          title: "Permission denied",
+          description: "Admins can only delete tasks they created",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (currentUser.role !== 'superadmin') {
+      toast({
+        title: "Permission denied",
+        description: "Only admins and superadmins can delete tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     deleteTaskMutation.mutate(taskId);
   };
 
