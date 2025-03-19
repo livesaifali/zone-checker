@@ -8,7 +8,12 @@ const TasksLoadingState: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Task Management</h1>
-          <p className="text-muted-foreground">Connecting to database...</p>
+          <p className="text-muted-foreground">Connecting to database and loading tasks...</p>
+        </div>
+      </div>
+      <div className="flex items-center mb-6">
+        <div className="h-2 w-full bg-gray-200 rounded overflow-hidden">
+          <div className="h-full bg-blue-500 animate-pulse" style={{ width: '70%' }}></div>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

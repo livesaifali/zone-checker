@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -28,7 +27,13 @@ export const useTasks = () => {
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
     queryClient.invalidateQueries({ queryKey: ['zones'] });
     setErrorDetail(null);
-  }, [queryClient]);
+    
+    // Show retrying toast
+    toast({
+      title: "Retrying connection",
+      description: "Attempting to reconnect to the server...",
+    });
+  }, [queryClient, toast]);
 
   // Fetch tasks from API
   const { 
@@ -42,12 +47,14 @@ export const useTasks = () => {
       try {
         return await taskService.getAll();
       } catch (error: any) {
+        console.error('Failed to load tasks:', error);
         setErrorDetail(error.message || 'Failed to load tasks');
         throw error;
       }
     },
     enabled: !!currentUser, // Only fetch if user is logged in
-    retry: 2,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch zones from API
@@ -62,12 +69,14 @@ export const useTasks = () => {
       try {
         return await zoneService.getAll();
       } catch (error: any) {
+        console.error('Failed to load zones:', error);
         setErrorDetail(error.message || 'Failed to load zones');
         throw error;
       }
     },
     enabled: !!currentUser, // Only fetch if user is logged in
-    retry: 2,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   // Create task mutation

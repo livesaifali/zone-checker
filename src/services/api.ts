@@ -1,13 +1,12 @@
-
 import axios from 'axios';
 
-// Set default API URL based on environment
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'; 
+// Set default API URL - make sure this matches your backend
+const API_URL = 'http://localhost:3000/api';
 
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000, // Add timeout for better error handling
+  timeout: 15000, // Increase timeout for slower connections
 });
 
 // Add request interceptor to include auth token
@@ -29,6 +28,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('API Error Details:', error);
+    
     if (error.code === 'ECONNABORTED') {
       console.error('API Request Timeout:', error);
       return Promise.reject(new Error('Connection timeout. Please check your internet connection and try again.'));
@@ -36,7 +37,7 @@ api.interceptors.response.use(
     
     if (!error.response) {
       console.error('Network Error:', error);
-      return Promise.reject(new Error('Network error. Please check your internet connection and try again.'));
+      return Promise.reject(new Error('Cannot connect to server. Please check your connection and make sure the backend server is running.'));
     }
     
     console.error('API Error:', error.response?.status, error.response?.data);
@@ -47,8 +48,13 @@ api.interceptors.response.use(
 // Auth services
 export const authService = {
   login: async (username: string, password: string) => {
-    const response = await api.post('/auth/login', { username, password });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', { username, password });
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
   getCurrentUser: async () => {
     const response = await api.get('/users/me');

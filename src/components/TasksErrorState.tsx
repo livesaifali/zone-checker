@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 
 interface TasksErrorStateProps {
   errorMessage?: string;
+  errorDetail?: string;
   onRetry?: () => void;
 }
 
 const TasksErrorState: React.FC<TasksErrorStateProps> = ({ 
-  errorMessage = "There was an error loading the tasks. Please try again later.",
+  errorMessage = "There was an error loading the tasks.",
+  errorDetail,
   onRetry
 }) => {
   return (
@@ -20,6 +22,21 @@ const TasksErrorState: React.FC<TasksErrorStateProps> = ({
         <AlertTitle>Database Connection Error</AlertTitle>
         <AlertDescription>
           {errorMessage}
+          
+          {errorDetail && (
+            <div className="mt-2 text-sm opacity-90">
+              Error details: {errorDetail}
+            </div>
+          )}
+          
+          <div className="mt-2">
+            Make sure that:
+            <ul className="list-disc pl-5 mt-1 text-sm">
+              <li>The backend server is running on port 3000</li>
+              <li>Your MySQL database is running and accessible</li>
+              <li>The database credentials in backend/.env are correct</li>
+            </ul>
+          </div>
         </AlertDescription>
       </Alert>
       
