@@ -27,6 +27,14 @@ async function checkDatabaseConnection() {
       console.log(`- ${Object.values(row)[0]}`);
     });
     
+    // Check if tasks table exists and has data
+    const [tasksCheck] = await connection.execute('SELECT COUNT(*) as count FROM tasks');
+    console.log(`Number of tasks in database: ${tasksCheck[0].count}`);
+    
+    // Check if cities/zones table exists and has data
+    const [zonesCheck] = await connection.execute('SELECT COUNT(*) as count FROM cities');
+    console.log(`Number of cities/zones in database: ${zonesCheck[0].count}`);
+    
     connection.end();
     console.log('Connection closed.');
     

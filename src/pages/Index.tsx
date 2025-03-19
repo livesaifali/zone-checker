@@ -9,223 +9,66 @@ import ZoneStats from '@/components/ZoneStats';
 import AppHeader from '@/components/AppHeader';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/hooks/use-toast';
-import type { Task, Zone, User } from '@/types';
+import { useTasks } from '@/hooks/useTasks';
 
 const Index = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const { toast } = useToast();
+  
+  const {
+    currentUser,
+    tasks,
+    zones,
+    isLoadingTasks,
+    isLoadingZones,
+    isError,
+    errorDetail,
+    retryQueries,
+    handleTaskCreate,
+    handleTaskStatusUpdate,
+    handleTaskCommentUpdate,
+    handleDeleteTask,
+    isSuperAdmin,
+    isAdmin,
+    canCreateTasks
+  } = useTasks();
 
-  useEffect(() => {
-    // Mock data - replace with actual API calls
-    const mockZones: Zone[] = [
-      { id: 1, name: 'Karachi', status: null, comment: '', concernId: 'KHI001' },
-      { id: 2, name: 'Lahore', status: null, comment: '', concernId: 'LHR001' },
-      { id: 3, name: 'Islamabad', status: null, comment: '', concernId: 'ISB001' },
-      { id: 4, name: 'Peshawar', status: null, comment: '', concernId: 'PSH001' },
-      { id: 5, name: 'Hyderabad', status: 'pending', comment: 'Pending review', concernId: 'HYD001' },
-      { id: 6, name: 'Sukkur', status: 'updated', comment: 'Updated last week', concernId: 'SUK001' },
-      { id: 7, name: 'Quetta', status: 'uploaded', comment: 'All materials uploaded', concernId: 'QTA001' },
-      { id: 8, name: 'Multan', status: 'pending', comment: 'Awaiting confirmation', concernId: 'MUL001' },
-    ];
-    setZones(mockZones);
-
-    // Mock tasks data - for testing
-    const mockTasks: Task[] = [
-      {
-        id: 1,
-        title: 'Daily Excel Update',
-        description: 'Update the daily reporting Excel sheet with today\'s metrics',
-        createdBy: 1, // admin ID
-        createdAt: new Date().toISOString(),
-        status: 'pending',
-        assignedZones: ['KHI001', 'LHR001'],
-      },
-      {
-        id: 2,
-        title: 'Monthly Report',
-        description: 'Submit the monthly performance report',
-        createdBy: 1, // admin ID
-        createdAt: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-        status: 'updated',
-        assignedZones: ['ISB001'],
-        comments: [
-          {
-            id: 1,
-            taskId: 2,
-            userId: 3,
-            userName: 'islamabad',
-            comment: 'Report has been updated with latest figures',
-            createdAt: new Date().toISOString(),
-          }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Inventory Check',
-        description: 'Conduct a physical inventory check and update the inventory system',
-        createdBy: 1, // admin ID
-        createdAt: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-        status: 'updated',
-        assignedZones: ['HYD001', 'SUK001'],
-      },
-      {
-        id: 4,
-        title: 'Customer Feedback Collection',
-        description: 'Collect customer feedback from satisfaction surveys',
-        createdBy: 1, // admin ID
-        createdAt: new Date().toISOString(),
-        status: 'pending',
-        assignedZones: ['KHI001', 'LHR001', 'ISB001', 'PSH001'],
-      }
-    ];
-    setTasks(mockTasks);
-    setFilteredTasks(mockTasks);
-
-    const userStr = localStorage.getItem('currentUser');
-    if (userStr) {
-      try {
-        setCurrentUser(JSON.parse(userStr));
-      } catch (e) {
-        console.error('Failed to parse user data', e);
-      }
-    }
-  }, []);
-
-  // Filter tasks based on search term and user permission
-  useEffect(() => {
-    if (!tasks.length) return;
-    
-    let filtered = [...tasks];
-    
-    // Apply search filter if term exists
-    if (searchTerm) {
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // If user is not admin or superadmin, only show tasks assigned to their zone
-    if (currentUser && currentUser.role === 'user') {
-      filtered = filtered.filter(task => 
-        task.assignedZones.includes(currentUser.concernId)
-      );
-    }
-    
-    setFilteredTasks(filtered);
-  }, [searchTerm, tasks, currentUser]);
-
-  const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
-    if (!currentUser) {
-      toast({
-        title: "Authentication required",
-        description: "You must be logged in to create tasks",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newTask: Task = {
-      ...taskData,
-      id: tasks.length + 1,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const updatedTasks = [...tasks, newTask];
-    setTasks(updatedTasks);
-    setFilteredTasks(updatedTasks);
-
-    toast({
-      title: "Task created",
-      description: `Task "${newTask.title}" has been assigned to ${newTask.assignedZones.length} zone(s)`,
-    });
-  };
-
-  const handleTaskStatusUpdate = (taskId: number, newStatus: 'pending' | 'updated') => {
-    if (!currentUser) return;
-    
-    const updatedTasks = tasks.map(task => 
-      task.id === taskId ? { ...task, status: newStatus } : task
-    );
-    
-    setTasks(updatedTasks);
-    setFilteredTasks(updatedTasks.filter(task => 
-      searchTerm ? 
-        (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-         task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
-        true
-    ));
-
-    toast({
-      title: "Task updated",
-      description: `Task status has been updated to ${newStatus}`,
-    });
-  };
-
-  const handleTaskCommentUpdate = (taskId: number, comment: string) => {
-    if (!currentUser) return;
-    
-    const newComment = {
-      id: Math.floor(Math.random() * 1000),
-      taskId,
-      userId: currentUser.id,
-      userName: currentUser.username,
-      comment,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        const comments = task.comments ? [...task.comments, newComment] : [newComment];
-        return { ...task, comments };
-      }
-      return task;
-    });
-    
-    setTasks(updatedTasks);
-    setFilteredTasks(updatedTasks.filter(task => 
-      searchTerm ? 
-        (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-         task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
-        true
-    ));
-    
-    toast({
-      title: "Comment saved",
-      description: "Your comment has been added to the task",
-    });
-  };
-
-  const handleDeleteTask = (taskId: number) => {
-    const updatedTasks = tasks.filter(task => task.id !== taskId);
-    setTasks(updatedTasks);
-    setFilteredTasks(updatedTasks.filter(task => 
-      searchTerm ? 
-        (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-         task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
-        true
-    ));
-    
-    toast({
-      title: "Task deleted",
-      description: "The task has been removed",
-    });
-  };
+  // Filter tasks based on search term
+  const filteredTasks = tasks.filter(task => 
+    searchTerm ? 
+      (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
+      true
+  );
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
 
-  // Determine user role and permissions
-  const isSuperAdmin = currentUser?.role === 'superadmin';
-  const isAdmin = currentUser?.role === 'admin';
-  const canCreateTasks = isSuperAdmin || isAdmin;
+  // Show loading state
+  if (isLoadingTasks || isLoadingZones) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading data...</p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <div className="container mx-auto p-4 max-w-md">
+        <div className="bg-destructive/10 border border-destructive rounded-lg p-4 text-center">
+          <h3 className="text-lg font-medium text-destructive mb-2">Connection Error</h3>
+          <p className="text-muted-foreground mb-4">
+            {errorDetail || "Could not connect to the database. Please check your connection and try again."}
+          </p>
+          <Button onClick={retryQueries}>Retry Connection</Button>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate task stats
   const totalTasks = filteredTasks.length;
