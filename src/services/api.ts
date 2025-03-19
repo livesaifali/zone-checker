@@ -1,12 +1,13 @@
 
 import axios from 'axios';
 
-// Use environment variable if available, otherwise use default
+// Set default API URL based on environment
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'; 
 
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // Add timeout for better error handling
 });
 
 // Add request interceptor to include auth token
@@ -18,14 +19,27 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
 );
 
 // Add response interceptor to handle common errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
+    if (error.code === 'ECONNABORTED') {
+      console.error('API Request Timeout:', error);
+      return Promise.reject(new Error('Connection timeout. Please check your internet connection and try again.'));
+    }
+    
+    if (!error.response) {
+      console.error('Network Error:', error);
+      return Promise.reject(new Error('Network error. Please check your internet connection and try again.'));
+    }
+    
+    console.error('API Error:', error.response?.status, error.response?.data);
     return Promise.reject(error);
   }
 );

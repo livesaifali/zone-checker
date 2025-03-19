@@ -13,8 +13,9 @@ const Tasks = () => {
     zones,
     isLoadingTasks,
     isLoadingZones,
-    tasksError,
-    zonesError,
+    isError,
+    errorDetail,
+    retryQueries,
     handleTaskCreate,
     handleTaskStatusUpdate,
     handleTaskCommentUpdate,
@@ -29,8 +30,13 @@ const Tasks = () => {
   }
 
   // Show error state
-  if (tasksError || zonesError) {
-    return <TasksErrorState />;
+  if (isError) {
+    return (
+      <TasksErrorState 
+        errorMessage={errorDetail || "Could not connect to the database. Please check your connection and try again."} 
+        onRetry={retryQueries}
+      />
+    );
   }
 
   return (

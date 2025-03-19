@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
 import { taskService, zoneService } from '@/services/api';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useTasks = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -22,26 +23,51 @@ export const useTasks = () => {
     }
   }, []);
 
+  // Retry function for queries
+  const retryQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['zones'] });
+    setErrorDetail(null);
+  }, [queryClient]);
+
   // Fetch tasks from API
   const { 
     data: tasks = [], 
     isLoading: isLoadingTasks,
-    error: tasksError
+    error: tasksError,
+    isError: isTasksError,
   } = useQuery({
     queryKey: ['tasks'],
-    queryFn: taskService.getAll,
+    queryFn: async () => {
+      try {
+        return await taskService.getAll();
+      } catch (error: any) {
+        setErrorDetail(error.message || 'Failed to load tasks');
+        throw error;
+      }
+    },
     enabled: !!currentUser, // Only fetch if user is logged in
+    retry: 2,
   });
 
   // Fetch zones from API
   const { 
     data: zones = [], 
     isLoading: isLoadingZones,
-    error: zonesError 
+    error: zonesError,
+    isError: isZonesError,
   } = useQuery({
     queryKey: ['zones'],
-    queryFn: zoneService.getAll,
+    queryFn: async () => {
+      try {
+        return await zoneService.getAll();
+      } catch (error: any) {
+        setErrorDetail(error.message || 'Failed to load zones');
+        throw error;
+      }
+    },
     enabled: !!currentUser, // Only fetch if user is logged in
+    retry: 2,
   });
 
   // Create task mutation
@@ -54,11 +80,11 @@ export const useTasks = () => {
         description: "The task has been created successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating task:', error);
       toast({
         title: "Error creating task",
-        description: "Failed to create the task",
+        description: error.message || "Failed to create the task",
         variant: "destructive",
       });
     },
@@ -75,11 +101,11 @@ export const useTasks = () => {
         description: "The task status has been updated",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error updating task status:', error);
       toast({
         title: "Error updating status",
-        description: "Failed to update the task status",
+        description: error.message || "Failed to update the task status",
         variant: "destructive",
       });
     },
@@ -96,11 +122,11 @@ export const useTasks = () => {
         description: "Your comment has been added to the task",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error adding comment:', error);
       toast({
         title: "Error adding comment",
-        description: "Failed to add the comment",
+        description: error.message || "Failed to add the comment",
         variant: "destructive",
       });
     },
@@ -116,11 +142,11 @@ export const useTasks = () => {
         description: "The task has been removed",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error deleting task:', error);
       toast({
         title: "Error deleting task",
-        description: "Failed to delete the task",
+        description: error.message || "Failed to delete the task",
         variant: "destructive",
       });
     },
@@ -158,14 +184,20 @@ export const useTasks = () => {
   const isAdmin = currentUser?.role === 'admin';
   const canCreateTasks = isSuperAdmin || isAdmin;
 
+  // Check for error
+  const isError = isTasksError || isZonesError;
+  const error = tasksError || zonesError;
+
   return {
     currentUser,
     tasks,
     zones,
     isLoadingTasks,
     isLoadingZones,
-    tasksError,
-    zonesError,
+    isError,
+    error,
+    errorDetail,
+    retryQueries,
     handleTaskCreate,
     handleTaskStatusUpdate,
     handleTaskCommentUpdate,

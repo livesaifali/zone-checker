@@ -12,12 +12,14 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage('');
 
     try {
       // Use the authService from our API service
@@ -43,52 +45,21 @@ const Login = () => {
       });
       
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       
-      // For development purposes, let's add a way to bypass login
-      if (username === 'admin' && password === 'admin123') {
-        // Mock admin user data
-        localStorage.setItem('token', 'mock-token');
-        localStorage.setItem('currentUser', JSON.stringify({
-          id: 1,
-          username: 'admin',
-          role: 'superadmin',
-          concernId: 'ADMIN'
-        }));
-        
-        toast({
-          title: "Development login",
-          description: "Logged in with mock admin credentials",
-        });
-        
-        navigate('/');
-        return;
-      }
-      
-      // Handle other user roles for development
-      if (username && password === 'user123') {
-        // Mock city user data
-        localStorage.setItem('token', 'mock-token');
-        localStorage.setItem('currentUser', JSON.stringify({
-          id: 2,
-          username: username,
-          role: 'user',
-          concernId: username.toUpperCase().slice(0, 3) + '001'
-        }));
-        
-        toast({
-          title: "Development login",
-          description: `Logged in as ${username}`,
-        });
-        
-        navigate('/');
-        return;
+      // Show appropriate error message
+      if (error.response && error.response.status === 401) {
+        setErrorMessage('Invalid username or password');
+      } else if (!error.response) {
+        setErrorMessage('Cannot connect to server. Please check your connection.');
+      } else {
+        setErrorMessage('An error occurred during login. Please try again.');
       }
       
       toast({
         title: "Login failed",
-        description: "Invalid username or password",
+        description: errorMessage || "Authentication failed",
         variant: "destructive",
       });
     } finally {
@@ -134,6 +105,13 @@ const Login = () => {
                 />
               </div>
             </div>
+
+            {errorMessage && (
+              <div className="text-sm text-red-500 font-medium">
+                {errorMessage}
+              </div>
+            )}
+
             <Button 
               type="submit" 
               className="w-full" 
@@ -144,7 +122,7 @@ const Login = () => {
           </form>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Development logins:</p>
+            <p>Database users from initial setup:</p>
             <p className="mt-1">Admin: <strong>admin / admin123</strong></p>
             <p>City user: <strong>karachi / user123</strong></p>
           </div>
