@@ -76,8 +76,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
       status: 'pending' as const,
       assignedZones: selectedZones,
       dueDate: dueDate || undefined,
-      createdBy: currentUser.id, // Add the createdBy property
-      createdByUsername: currentUser.username // Add the username for display purposes
+      createdBy: currentUser.id,
+      createdByUsername: currentUser.username
     };
 
     onTaskCreate(newTask);
