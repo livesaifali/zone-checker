@@ -1,17 +1,19 @@
 
 import React, { useState } from 'react';
-import { useTasks } from '@/hooks/useTasks';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search, PlusCircle } from 'lucide-react';
 import TaskList from '@/components/TaskList';
+import TaskManagement from '@/components/TaskManagement';
+import TasksHeader from '@/components/TasksHeader';
+import EmptyState from '@/components/EmptyState';
 import TasksLoadingState from '@/components/TasksLoadingState';
 import TasksErrorState from '@/components/TasksErrorState';
-import TasksHeader from '@/components/TasksHeader';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { useTasks } from '@/hooks/useTasks';
 
 const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   
   const {
     currentUser,
@@ -26,6 +28,7 @@ const Tasks = () => {
     handleTaskStatusUpdate,
     handleTaskCommentUpdate,
     handleDeleteTask,
+    isSuperAdmin,
     isAdmin,
     canCreateTasks
   } = useTasks();
@@ -47,6 +50,10 @@ const Tasks = () => {
     return matchesSearch;
   });
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
   // Show loading state
   if (isLoadingTasks || isLoadingZones) {
     return <TasksLoadingState />;
@@ -54,69 +61,62 @@ const Tasks = () => {
 
   // Show error state
   if (isError) {
-    return (
-      <TasksErrorState 
-        errorMessage={errorDetail || "Could not connect to the database. Please check your connection and try again."} 
-        onRetry={retryQueries}
-      />
-    );
-  }
-
-  // Check if the user has appropriate access
-  if (!currentUser) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Authentication Error</AlertTitle>
-          <AlertDescription>
-            You are not authenticated. Please log in to access this page.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <TasksErrorState error={errorDetail} onRetry={retryQueries} />;
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto p-4 lg:p-8 max-w-6xl">
       <TasksHeader 
         canCreateTasks={canCreateTasks} 
         zones={zones} 
         onTaskCreate={handleTaskCreate} 
       />
-
+      
       <div className="relative mb-6">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input 
           type="search" 
           placeholder="Search tasks..." 
           className="pl-9 backdrop-blur-sm bg-white/80"
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
         />
+        {canCreateTasks && (
+          <Button 
+            className="absolute right-1 top-1 transition-all duration-300 hover:scale-105 md:hidden"
+            size="sm"
+            onClick={() => setIsTaskDialogOpen(true)}
+          >
+            <PlusCircle className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-
-      {filteredTasks.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium">No tasks available</h3>
-          <p className="text-muted-foreground mt-1">
-            {currentUser.role === 'user' 
-              ? "No tasks have been assigned to your zone yet" 
-              : canCreateTasks 
-                ? "Start by creating a new task" 
-                : "No tasks found"}
-          </p>
-        </div>
-      ) : (
-        <TaskList 
-          tasks={filteredTasks} 
-          userConcernId={currentUser?.concernId}
-          onStatusUpdate={handleTaskStatusUpdate}
-          onCommentUpdate={handleTaskCommentUpdate} 
-          onDeleteTask={canCreateTasks ? handleDeleteTask : undefined}
-          isUser={currentUser.role === 'user'}
-          isAdmin={isAdmin}
+      
+      {filteredTasks.length === 0 && (
+        <EmptyState 
+          onAddZone={() => setIsTaskDialogOpen(true)} 
+          isAdmin={canCreateTasks} 
         />
       )}
+      
+      {filteredTasks.length > 0 && (
+        <TaskList 
+          tasks={filteredTasks}
+          userConcernId={currentUser?.concernId}
+          onStatusUpdate={handleTaskStatusUpdate}
+          onCommentUpdate={handleTaskCommentUpdate}
+          onDeleteTask={canCreateTasks ? handleDeleteTask : undefined}
+          isUser={currentUser?.role === 'user'}
+          isAdmin={isAdmin || isSuperAdmin}
+        />
+      )}
+      
+      {/* Task Management Dialog outside the TasksHeader for mobile button */}
+      <TaskManagement 
+        zones={zones} 
+        onTaskCreate={handleTaskCreate}
+        isOpen={isTaskDialogOpen}
+        setIsOpen={setIsTaskDialogOpen}
+      />
     </div>
   );
 };

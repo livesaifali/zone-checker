@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import TaskManagement from '@/components/TaskManagement';
 import { Badge } from '@/components/ui/badge';
 import { User, UserCheck, UserCog, PlusCircle } from 'lucide-react';
@@ -17,6 +17,8 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
   zones, 
   onTaskCreate 
 }) => {
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+
   // Get user role from localStorage
   const getUserRole = (): 'superadmin' | 'admin' | 'user' | null => {
     const userStr = localStorage.getItem('currentUser');
@@ -68,22 +70,22 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
         </p>
       </div>
       {canCreateTasks && (
-        <div>
-          <Button 
-            id="create-task-btn" 
-            className="transition-all duration-300 hover:scale-105"
-            onClick={() => document.getElementById('task-management-dialog-trigger')?.click()}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Task
-          </Button>
-        </div>
+        <Button 
+          className="transition-all duration-300 hover:scale-105"
+          onClick={() => setIsTaskDialogOpen(true)}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Create New Task
+        </Button>
       )}
       
-      {/* Hidden TaskManagement component that gets triggered by the button */}
-      <div className="hidden">
-        <TaskManagement zones={zones} onTaskCreate={onTaskCreate} />
-      </div>
+      {/* Task Management Dialog */}
+      <TaskManagement 
+        zones={zones} 
+        onTaskCreate={onTaskCreate} 
+        isOpen={isTaskDialogOpen}
+        setIsOpen={setIsTaskDialogOpen}
+      />
     </div>
   );
 };

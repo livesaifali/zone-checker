@@ -13,6 +13,7 @@ import { useTasks } from '@/hooks/useTasks';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -109,7 +110,7 @@ const Index = () => {
             {canCreateTasks && (
               <Button 
                 className="transition-all duration-300 hover:scale-105"
-                onClick={() => document.getElementById('task-management-dialog-trigger')?.click()}
+                onClick={() => setIsTaskDialogOpen(true)}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Task
@@ -138,7 +139,7 @@ const Index = () => {
         
         {filteredTasks.length === 0 && (
           <EmptyState 
-            onAddZone={() => document.getElementById('task-management-dialog-trigger')?.click()} 
+            onAddZone={() => setIsTaskDialogOpen(true)} 
             isAdmin={canCreateTasks} 
           />
         )}
@@ -155,13 +156,13 @@ const Index = () => {
           />
         )}
         
-        {/* Hidden TaskManagement component for dialog trigger */}
-        <div className="hidden">
-          <TaskManagement 
-            zones={zones} 
-            onTaskCreate={handleTaskCreate}
-          />
-        </div>
+        {/* Task Management Dialog */}
+        <TaskManagement 
+          zones={zones} 
+          onTaskCreate={handleTaskCreate}
+          isOpen={isTaskDialogOpen}
+          setIsOpen={setIsTaskDialogOpen}
+        />
       </div>
     </div>
   );

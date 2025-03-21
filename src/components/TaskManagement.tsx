@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Calendar, AlertCircle, HelpCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, AlertCircle, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -18,10 +18,16 @@ import type { Task, Zone, User } from '@/types';
 interface TaskManagementProps {
   zones: Zone[];
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
 }
 
-const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) => {
-  const [isAddingTask, setIsAddingTask] = useState(false);
+const TaskManagement: React.FC<TaskManagementProps> = ({ 
+  zones, 
+  onTaskCreate, 
+  isOpen, 
+  setIsOpen 
+}) => {
   const [selectedZones, setSelectedZones] = useState<string[]>([]);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
@@ -119,7 +125,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     };
 
     onTaskCreate(newTask);
-    setIsAddingTask(false);
+    setIsOpen(false);
     resetForm();
 
     toast({
@@ -128,8 +134,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     });
   };
 
-  const handleDialogOpen = (open: boolean) => {
-    setIsAddingTask(open);
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsOpen(open);
     if (!open) {
       resetForm();
     }
@@ -154,12 +160,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   // For empty state when no zones are available
   if (zones.length === 0 && canCreateTasks) {
     return (
-      <div className="mb-6">
-        <Button id="create-task-btn" className="transition-all hover:scale-105" disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Task
-        </Button>
-        <p className="text-sm text-muted-foreground mt-2">
+      <div className="text-center py-4">
+        <p className="text-sm text-muted-foreground">
           No zones available. Please add zones first to create tasks.
         </p>
       </div>
@@ -167,111 +169,103 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   }
 
   return (
-    <div className="mb-6">
-      <Dialog open={isAddingTask} onOpenChange={handleDialogOpen}>
-        <DialogTrigger asChild>
-          <Button id="task-management-dialog-trigger" className="transition-all hover:scale-105">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Task
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] glass-panel">
-          <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {formError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{formError}</AlertDescription>
-              </Alert>
-            )}
-            <div className="grid gap-2">
-              <label htmlFor="title">Task Title <span className="text-destructive">*</span></label>
-              <Input
-                id="title"
-                value={taskTitle}
-                onChange={(e) => {
-                  setTaskTitle(e.target.value);
-                  if (formError && e.target.value.trim()) setFormError(null);
-                }}
-                placeholder="Excel Sheet Update Required"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="description">Description <span className="text-destructive">*</span></label>
-              <Textarea
-                id="description"
-                value={taskDescription}
-                onChange={(e) => {
-                  setTaskDescription(e.target.value);
-                  if (formError && e.target.value.trim()) setFormError(null);
-                }}
-                placeholder="Please update the daily status excel sheet..."
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="dueDate">Due Date (Optional)</label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <label>Assign to Zones <span className="text-destructive">*</span></label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
-                        <HelpCircle className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">Select one or more zones to assign this task to. Only users from these zones will see the task.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="border rounded-md p-2">
-                <div className="mb-2">
-                  <Button 
-                    variant={selectedZones.length === zones.length ? "default" : "outline"}
-                    size="sm"
-                    className="w-full text-left justify-start"
-                    onClick={() => handleSelectedZonesChange('all')}
-                  >
-                    {selectedZones.length === zones.length ? "Deselect All" : "Select All Zones"}
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
-                  {zones.map((zone) => (
-                    <Button
-                      key={zone.id}
-                      variant={selectedZones.includes(zone.concernId) ? "default" : "outline"}
-                      size="sm"
-                      className="justify-start"
-                      onClick={() => handleSelectedZonesChange(zone.concernId)}
-                    >
-                      {zone.name}
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="sm:max-w-[500px] glass-panel">
+        <DialogHeader>
+          <DialogTitle>Create New Task</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          {formError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
+          <div className="grid gap-2">
+            <label htmlFor="title">Task Title <span className="text-destructive">*</span></label>
+            <Input
+              id="title"
+              value={taskTitle}
+              onChange={(e) => {
+                setTaskTitle(e.target.value);
+                if (formError && e.target.value.trim()) setFormError(null);
+              }}
+              placeholder="Excel Sheet Update Required"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="description">Description <span className="text-destructive">*</span></label>
+            <Textarea
+              id="description"
+              value={taskDescription}
+              onChange={(e) => {
+                setTaskDescription(e.target.value);
+                if (formError && e.target.value.trim()) setFormError(null);
+              }}
+              placeholder="Please update the daily status excel sheet..."
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="dueDate">Due Date (Optional)</label>
+            <Input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <label>Assign to Zones <span className="text-destructive">*</span></label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
+                      <HelpCircle className="h-4 w-4" />
                     </Button>
-                  ))}
-                </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Select one or more zones to assign this task to. Only users from these zones will see the task.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="border rounded-md p-2">
+              <div className="mb-2">
+                <Button 
+                  variant={selectedZones.length === zones.length ? "default" : "outline"}
+                  size="sm"
+                  className="w-full text-left justify-start"
+                  onClick={() => handleSelectedZonesChange('all')}
+                >
+                  {selectedZones.length === zones.length ? "Deselect All" : "Select All Zones"}
+                </Button>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                {getSelectedZonesText()}
+              <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                {zones.map((zone) => (
+                  <Button
+                    key={zone.id}
+                    variant={selectedZones.includes(zone.concernId) ? "default" : "outline"}
+                    size="sm"
+                    className="justify-start"
+                    onClick={() => handleSelectedZonesChange(zone.concernId)}
+                  >
+                    {zone.name}
+                  </Button>
+                ))}
               </div>
             </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {getSelectedZonesText()}
+            </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => handleDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateTask}>Create Task</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleCreateTask}>Create Task</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
