@@ -109,7 +109,7 @@ const Index = () => {
             {canCreateTasks && (
               <Button 
                 className="transition-all duration-300 hover:scale-105"
-                onClick={() => document.getElementById('create-task-btn')?.click()}
+                onClick={() => document.getElementById('task-management-dialog-trigger')?.click()}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Task
@@ -138,7 +138,7 @@ const Index = () => {
         
         {filteredTasks.length === 0 && (
           <EmptyState 
-            onAddZone={() => document.getElementById('create-task-btn')?.click()} 
+            onAddZone={() => document.getElementById('task-management-dialog-trigger')?.click()} 
             isAdmin={canCreateTasks} 
           />
         )}
@@ -155,11 +155,13 @@ const Index = () => {
           />
         )}
         
-        {/* Make sure the TaskManagement component is always rendered (not hidden) so it's accessible */}
-        <TaskManagement 
-          zones={zones} 
-          onTaskCreate={handleTaskCreate}
-        />
+        {/* Hidden TaskManagement component for dialog trigger */}
+        <div className="hidden">
+          <TaskManagement 
+            zones={zones} 
+            onTaskCreate={handleTaskCreate}
+          />
+        </div>
       </div>
     </div>
   );

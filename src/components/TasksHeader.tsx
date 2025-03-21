@@ -2,7 +2,8 @@
 import React from 'react';
 import TaskManagement from '@/components/TaskManagement';
 import { Badge } from '@/components/ui/badge';
-import { User, UserCheck, UserCog } from 'lucide-react';
+import { User, UserCheck, UserCog, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Zone, Task } from '@/types';
 
 interface TasksHeaderProps {
@@ -67,8 +68,22 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
         </p>
       </div>
       {canCreateTasks && (
-        <TaskManagement zones={zones} onTaskCreate={onTaskCreate} />
+        <div>
+          <Button 
+            id="create-task-btn" 
+            className="transition-all duration-300 hover:scale-105"
+            onClick={() => document.getElementById('task-management-dialog-trigger')?.click()}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New Task
+          </Button>
+        </div>
       )}
+      
+      {/* Hidden TaskManagement component that gets triggered by the button */}
+      <div className="hidden">
+        <TaskManagement zones={zones} onTaskCreate={onTaskCreate} />
+      </div>
     </div>
   );
 };

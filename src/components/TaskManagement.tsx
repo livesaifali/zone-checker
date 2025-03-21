@@ -151,13 +151,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
   // Check if user has permission to create tasks
   const canCreateTasks = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
-  // Render nothing if user doesn't have permission or there are no zones
-  if (!canCreateTasks) {
-    return null;
-  }
-
   // For empty state when no zones are available
-  if (zones.length === 0) {
+  if (zones.length === 0 && canCreateTasks) {
     return (
       <div className="mb-6">
         <Button id="create-task-btn" className="transition-all hover:scale-105" disabled>
@@ -175,7 +170,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     <div className="mb-6">
       <Dialog open={isAddingTask} onOpenChange={handleDialogOpen}>
         <DialogTrigger asChild>
-          <Button id="create-task-btn" className="transition-all hover:scale-105">
+          <Button id="task-management-dialog-trigger" className="transition-all hover:scale-105">
             <Plus className="mr-2 h-4 w-4" />
             Create New Task
           </Button>
