@@ -55,6 +55,10 @@ const Index = () => {
     setSearchTerm(term);
   };
 
+  const openCreateTaskDialog = () => {
+    setIsTaskDialogOpen(true);
+  };
+
   // Show loading state
   if (isLoadingTasks || isLoadingZones) {
     return (
@@ -110,7 +114,7 @@ const Index = () => {
             {canCreateTasks && (
               <Button 
                 className="transition-all duration-300 hover:scale-105"
-                onClick={() => setIsTaskDialogOpen(true)}
+                onClick={openCreateTaskDialog}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create Task
@@ -139,7 +143,7 @@ const Index = () => {
         
         {filteredTasks.length === 0 && (
           <EmptyState 
-            onAddZone={() => setIsTaskDialogOpen(true)} 
+            onAddZone={openCreateTaskDialog} 
             isAdmin={canCreateTasks} 
           />
         )}

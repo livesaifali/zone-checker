@@ -61,7 +61,7 @@ const Tasks = () => {
 
   // Show error state
   if (isError) {
-    return <TasksErrorState error={errorDetail} onRetry={retryQueries} />;
+    return <TasksErrorState errorDetail={errorDetail} onRetry={retryQueries} />;
   }
 
   return (
