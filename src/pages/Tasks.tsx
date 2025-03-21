@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TasksLoadingState from '@/components/TasksLoadingState';
@@ -7,8 +7,12 @@ import TasksErrorState from '@/components/TasksErrorState';
 import TasksHeader from '@/components/TasksHeader';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 const Tasks = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const {
     currentUser,
     tasks,
@@ -25,6 +29,23 @@ const Tasks = () => {
     isAdmin,
     canCreateTasks
   } = useTasks();
+
+  // Filter tasks based on search term and user role/concern
+  const filteredTasks = tasks.filter(task => {
+    // First filter by search term
+    const matchesSearch = searchTerm ? 
+      (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
+      true;
+    
+    // Then filter by user's concern if they're a regular user
+    if (currentUser?.role === 'user' && currentUser?.concernId) {
+      return matchesSearch && task.assignedZones.includes(currentUser.concernId);
+    }
+    
+    // Admins and superadmins can see all tasks
+    return matchesSearch;
+  });
 
   // Show loading state
   if (isLoadingTasks || isLoadingZones) {
@@ -64,23 +85,35 @@ const Tasks = () => {
         onTaskCreate={handleTaskCreate} 
       />
 
-      {tasks.length === 0 ? (
+      <div className="relative mb-6">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input 
+          type="search" 
+          placeholder="Search tasks..." 
+          className="pl-9 backdrop-blur-sm bg-white/80"
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {filteredTasks.length === 0 ? (
         <div className="text-center py-12">
           <h3 className="text-lg font-medium">No tasks available</h3>
           <p className="text-muted-foreground mt-1">
-            {canCreateTasks 
-              ? "Start by creating a new task" 
-              : "No tasks have been assigned to your zone yet"}
+            {currentUser.role === 'user' 
+              ? "No tasks have been assigned to your zone yet" 
+              : canCreateTasks 
+                ? "Start by creating a new task" 
+                : "No tasks found"}
           </p>
         </div>
       ) : (
         <TaskList 
-          tasks={tasks} 
+          tasks={filteredTasks} 
           userConcernId={currentUser?.concernId}
           onStatusUpdate={handleTaskStatusUpdate}
           onCommentUpdate={handleTaskCommentUpdate} 
           onDeleteTask={canCreateTasks ? handleDeleteTask : undefined}
-          isUser={!canCreateTasks}
+          isUser={currentUser.role === 'user'}
           isAdmin={isAdmin}
         />
       )}

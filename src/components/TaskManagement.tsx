@@ -4,9 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, AlertCircle, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Task, Zone, User } from '@/types';
 
 interface TaskManagementProps {
@@ -93,6 +99,15 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
       return;
     }
 
+    if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
+      toast({
+        title: "Permission denied",
+        description: "Only admins can create tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newTask = {
       title: taskTitle,
       description: taskDescription,
@@ -132,6 +147,21 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     }
     return `${selectedZones.length} zones selected`;
   };
+
+  // For empty state when no zones are available
+  if (zones.length === 0) {
+    return (
+      <div className="mb-6">
+        <Button id="create-task-btn" className="transition-all hover:scale-105" disabled>
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Task
+        </Button>
+        <p className="text-sm text-muted-foreground mt-2">
+          No zones available. Please add zones first to create tasks.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6">
@@ -187,7 +217,21 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
               />
             </div>
             <div className="grid gap-2">
-              <label>Assign to Zones <span className="text-destructive">*</span></label>
+              <div className="flex items-center">
+                <label>Assign to Zones <span className="text-destructive">*</span></label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">Select one or more zones to assign this task to. Only users from these zones will see the task.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <div className="border rounded-md p-2">
                 <div className="mb-2">
                   <Button 

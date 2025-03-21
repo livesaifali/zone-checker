@@ -33,13 +33,22 @@ const Index = () => {
     canCreateTasks
   } = useTasks();
 
-  // Filter tasks based on search term
-  const filteredTasks = tasks.filter(task => 
-    searchTerm ? 
+  // Filter tasks based on search term and user role/concern
+  const filteredTasks = tasks.filter(task => {
+    // First filter by search term
+    const matchesSearch = searchTerm ? 
       (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
        task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
-      true
-  );
+      true;
+    
+    // Then filter by user's concern if they're a regular user
+    if (currentUser?.role === 'user' && currentUser?.concernId) {
+      return matchesSearch && task.assignedZones.includes(currentUser.concernId);
+    }
+    
+    // Admins and superadmins can see all tasks
+    return matchesSearch;
+  });
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -70,10 +79,17 @@ const Index = () => {
     );
   }
 
-  // Calculate task stats
+  // Calculate task stats based on filtered tasks
   const totalTasks = filteredTasks.length;
   const pendingTasks = filteredTasks.filter(task => task.status === 'pending').length;
   const updatedTasks = filteredTasks.filter(task => task.status === 'updated').length;
+  
+  // Get the user's role to display
+  const getRoleDisplay = () => {
+    if (isSuperAdmin) return "Super Admin Dashboard";
+    if (isAdmin) return "Admin Dashboard";
+    return "Zone User Dashboard";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,13 +97,13 @@ const Index = () => {
       
       <div className="max-w-6xl mx-auto p-4 md:p-8">
         <div className="flex flex-col gap-6 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Task Management</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">{getRoleDisplay()}</h1>
               <p className="text-muted-foreground mt-1">
                 {canCreateTasks 
                   ? "Create and assign tasks to zones" 
-                  : "View and respond to tasks assigned to your zone"}
+                  : `View and respond to tasks assigned to your zone${currentUser?.concernId ? ` (${currentUser.concernId})` : ''}`}
               </p>
             </div>
             {canCreateTasks && (
@@ -139,7 +155,7 @@ const Index = () => {
           />
         )}
         
-        {/* This is hidden but we'll use it to trigger the create task dialog */}
+        {/* TaskManagement is hidden but we'll use it to trigger the create task dialog */}
         <div className="hidden">
           <TaskManagement 
             zones={zones} 
