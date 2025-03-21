@@ -148,6 +148,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({ zones, onTaskCreate }) 
     return `${selectedZones.length} zones selected`;
   };
 
+  // Check if user has permission to create tasks
+  const canCreateTasks = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
+
+  // Render nothing if user doesn't have permission or there are no zones
+  if (!canCreateTasks) {
+    return null;
+  }
+
   // For empty state when no zones are available
   if (zones.length === 0) {
     return (

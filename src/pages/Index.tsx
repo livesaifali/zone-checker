@@ -155,13 +155,11 @@ const Index = () => {
           />
         )}
         
-        {/* TaskManagement is hidden but we'll use it to trigger the create task dialog */}
-        <div className="hidden">
-          <TaskManagement 
-            zones={zones} 
-            onTaskCreate={handleTaskCreate} 
-          />
-        </div>
+        {/* Make sure the TaskManagement component is always rendered (not hidden) so it's accessible */}
+        <TaskManagement 
+          zones={zones} 
+          onTaskCreate={handleTaskCreate}
+        />
       </div>
     </div>
   );

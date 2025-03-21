@@ -66,13 +66,8 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
             : "View and respond to tasks assigned to your zone"}
         </p>
       </div>
-      {canCreateTasks && zones.length > 0 && (
+      {canCreateTasks && (
         <TaskManagement zones={zones} onTaskCreate={onTaskCreate} />
-      )}
-      {canCreateTasks && zones.length === 0 && (
-        <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-          <p>No zones available. Please add zones first.</p>
-        </div>
       )}
     </div>
   );
