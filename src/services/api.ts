@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // Set default API URL - make sure this matches your backend
@@ -145,38 +144,57 @@ export const zoneService = {
 export const taskService = {
   getAll: async () => {
     console.log('Fetching all tasks...');
-    const response = await api.get('/tasks');
-    console.log('Tasks API response:', response.data);
-    
-    // Ensure assignedZones is properly processed
-    if (response.data) {
-      return response.data.map((task: any) => {
-        // Make sure we always have an array for assignedZones, even if it's empty
-        if (!task.assignedZones) {
-          task.assignedZones = [];
-        } else if (!Array.isArray(task.assignedZones)) {
-          // Handle case where assignedZones might not be an array
-          try {
-            task.assignedZones = JSON.parse(task.assignedZones);
-            if (!Array.isArray(task.assignedZones)) {
-              task.assignedZones = [task.assignedZones];
+    try {
+      const response = await api.get('/tasks');
+      console.log('Raw tasks data from API:', response.data);
+      
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error('Invalid tasks data format:', response.data);
+        return [];
+      }
+      
+      // Process each task to ensure correct assignedZones format
+      const processedTasks = response.data.map(task => {
+        console.log(`Processing task ${task.id}:`, task);
+        
+        let assignedZones = [];
+        
+        // Handle different possible formats of assignedZones
+        if (task.assignedZones) {
+          if (Array.isArray(task.assignedZones)) {
+            assignedZones = task.assignedZones;
+          } else if (typeof task.assignedZones === 'string') {
+            try {
+              // Try to parse if it's a JSON string
+              const parsed = JSON.parse(task.assignedZones);
+              assignedZones = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+              // If not valid JSON, treat as a single string value
+              assignedZones = [task.assignedZones];
             }
-          } catch (e) {
-            // If it can't be parsed as JSON, treat it as a single value
-            task.assignedZones = [task.assignedZones];
+          } else {
+            // Any other type (number, object, etc.)
+            assignedZones = [String(task.assignedZones)];
           }
         }
         
-        // Make sure all assignedZones are strings for consistent comparison
-        task.assignedZones = task.assignedZones.map((zone: any) => 
-          zone.toString()
-        );
+        // Ensure all zone IDs are strings for consistent comparison
+        assignedZones = assignedZones.map(zone => String(zone));
         
-        return task;
+        console.log(`Task ${task.id} processed assignedZones:`, assignedZones);
+        
+        return {
+          ...task,
+          assignedZones
+        };
       });
+      
+      console.log('Processed tasks:', processedTasks);
+      return processedTasks;
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      throw error;
     }
-    
-    return response.data;
   },
   create: async (taskData: any) => {
     const response = await api.post('/tasks', taskData);

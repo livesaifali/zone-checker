@@ -34,8 +34,10 @@ const Index = () => {
     canCreateTasks
   } = useTasks();
 
-  console.log("Current user in Index:", currentUser);
-  console.log("Tasks in Index:", tasks);
+  console.log("Index page - Current user:", currentUser);
+  console.log("Index page - Available tasks:", tasks);
+  console.log("Index page - User role:", currentUser?.role);
+  console.log("Index page - User concernId:", currentUser?.concernId);
 
   // Filter tasks based on search term
   const filteredTasks = tasks.filter(task => {

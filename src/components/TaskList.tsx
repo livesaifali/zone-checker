@@ -55,10 +55,10 @@ const TaskList: React.FC<TaskListProps> = ({
   console.log("TaskList isUser:", isUser);
   console.log("TaskList isAdmin:", isAdmin);
 
-  // No further filtering needed - tasks are already filtered by useTasks hook
+  // Use tasks as is - they're already filtered in useTasks
   const filteredTasks = tasks;
 
-  if (filteredTasks.length === 0) {
+  if (!filteredTasks || filteredTasks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         No tasks available

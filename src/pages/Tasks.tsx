@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, PlusCircle } from 'lucide-react';
@@ -10,10 +10,12 @@ import EmptyState from '@/components/EmptyState';
 import TasksLoadingState from '@/components/TasksLoadingState';
 import TasksErrorState from '@/components/TasksErrorState';
 import { useTasks } from '@/hooks/useTasks';
+import { useToast } from '@/hooks/use-toast';
 
 const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const { toast } = useToast();
   
   const {
     currentUser,
@@ -33,9 +35,18 @@ const Tasks = () => {
     canCreateTasks
   } = useTasks();
 
-  console.log("Current tasks in Tasks.tsx:", tasks);
-  console.log("Current user in Tasks.tsx:", currentUser);
+  console.log("Tasks component - Current user:", currentUser);
+  console.log("Tasks component - Available tasks:", tasks);
+  console.log("Tasks component - User role:", currentUser?.role);
+  console.log("Tasks component - User concernId:", currentUser?.concernId);
 
+  // Check if tasks are loading or available
+  useEffect(() => {
+    if (!isLoadingTasks && tasks.length === 0) {
+      console.log("No tasks available for the current user");
+    }
+  }, [isLoadingTasks, tasks]);
+  
   // Filter tasks based on search term
   const filteredTasks = tasks.filter(task => {
     return searchTerm ? 

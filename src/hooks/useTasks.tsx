@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -40,30 +39,14 @@ export const useTasks = () => {
 
   // Fetch tasks from API
   const { 
-    data: tasks = [], 
+    data: allTasks = [], 
     isLoading: isLoadingTasks,
     error: tasksError,
     isError: isTasksError,
   } = useQuery({
     queryKey: ['tasks'],
-    queryFn: async () => {
-      try {
-        const tasksData = await taskService.getAll();
-        console.log("Fetched tasks:", tasksData);
-        return tasksData;
-      } catch (error: any) {
-        console.error('Failed to load tasks:', error);
-        if (error.code === 'ECONNABORTED') {
-          setErrorDetail('Connection timeout. The server is taking too long to respond.');
-        } else if (!error.response) {
-          setErrorDetail('Cannot connect to server. Please check your connection and make sure the backend server is running.');
-        } else {
-          setErrorDetail(error.message || 'Failed to load tasks');
-        }
-        throw error;
-      }
-    },
-    enabled: !!currentUser, // Only fetch if user is logged in
+    queryFn: taskService.getAll,
+    enabled: !!currentUser,
     retry: 1,
     refetchOnWindowFocus: false,
   });
@@ -76,22 +59,8 @@ export const useTasks = () => {
     isError: isZonesError,
   } = useQuery({
     queryKey: ['zones'],
-    queryFn: async () => {
-      try {
-        return await zoneService.getAll();
-      } catch (error: any) {
-        console.error('Failed to load zones:', error);
-        if (error.code === 'ECONNABORTED') {
-          setErrorDetail('Connection timeout. The server is taking too long to respond.');
-        } else if (!error.response) {
-          setErrorDetail('Cannot connect to server. Please check your connection and make sure the backend server is running.');
-        } else {
-          setErrorDetail(error.message || 'Failed to load zones');
-        }
-        throw error;
-      }
-    },
-    enabled: !!currentUser, // Only fetch if user is logged in
+    queryFn: zoneService.getAll,
+    enabled: !!currentUser,
     retry: 1,
     refetchOnWindowFocus: false,
   });
@@ -178,40 +147,42 @@ export const useTasks = () => {
     },
   });
 
-  console.log("Before filtering - All tasks:", tasks);
-  console.log("Current user role:", currentUser?.role);
-  console.log("Current user concernId:", currentUser?.concernId);
-
-  // Filter tasks based on user role/concern
-  const filteredTasks = tasks.filter(task => {
-    // Debug logging to help identify issues
-    console.log(`Checking task ${task.id}:`, task);
-    console.log(`Task ${task.id} assignedZones:`, task.assignedZones);
-    
-    // For regular users, only show tasks assigned to their zone
-    if (currentUser?.role === 'user' && currentUser?.concernId) {
-      console.log(`Checking if task ${task.id} is assigned to user's concernId: ${currentUser.concernId}`);
-      
-      // The key fix: Check if the task's assignedZones includes the user's concernId
-      // Make sure to correctly handle the format of assignedZones
-      if (task.assignedZones && Array.isArray(task.assignedZones)) {
-        const isAssigned = task.assignedZones.some(zone => 
-          zone === currentUser.concernId || 
-          zone.toString() === currentUser.concernId
-        );
-        console.log(`Task ${task.id} assigned to user: ${isAssigned}`);
-        return isAssigned;
-      } else {
-        console.log(`Task ${task.id} has no valid assignedZones array`);
-        return false;
-      }
+  // Debug info about current user and tasks
+  console.log("Current user in useTasks:", currentUser);
+  console.log("All tasks from API:", allTasks);
+  console.log("User's concernId:", currentUser?.concernId);
+  
+  // Filter tasks based on user role and concernId
+  const tasks = allTasks.filter(task => {
+    // Super admin and admin can see all tasks
+    if (currentUser?.role === 'superadmin' || currentUser?.role === 'admin') {
+      return true;
     }
     
-    // Admins and superadmins can see all tasks
-    return true;
+    // Regular users can only see tasks assigned to their zone
+    if (currentUser?.role === 'user' && currentUser?.concernId) {
+      const userConcernId = String(currentUser.concernId);
+      
+      console.log(`Checking if task ${task.id} is assigned to zone ${userConcernId}`);
+      console.log(`Task ${task.id} assignedZones:`, task.assignedZones);
+      
+      // Check if task has assignedZones and if user's concernId is included
+      if (task.assignedZones && Array.isArray(task.assignedZones)) {
+        const stringZones = task.assignedZones.map(z => String(z));
+        const isAssigned = stringZones.includes(userConcernId);
+        
+        console.log(`Task ${task.id} assigned to user zone ${userConcernId}: ${isAssigned}`);
+        console.log(`assignedZones as strings:`, stringZones);
+        
+        return isAssigned;
+      }
+      return false;
+    }
+    
+    return false;
   });
-
-  console.log("After filtering - Filtered tasks:", filteredTasks);
+  
+  console.log("Filtered tasks for current user:", tasks);
 
   const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     if (!currentUser) {
@@ -311,7 +282,7 @@ export const useTasks = () => {
 
   return {
     currentUser,
-    tasks: filteredTasks,
+    tasks,
     zones,
     isLoadingTasks,
     isLoadingZones,
