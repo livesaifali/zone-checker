@@ -50,9 +50,9 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   
-  const filteredTasks = userConcernId && isUser
-    ? tasks.filter(task => task.assignedZones && task.assignedZones.includes(userConcernId))
-    : tasks;
+  // For user role, filter tasks to only show those assigned to their zone
+  // For admin/superadmin roles, show all tasks
+  const filteredTasks = tasks;
 
   if (filteredTasks.length === 0) {
     return (
@@ -122,7 +122,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 Task #{task.id}
               </Badge>
               {!isUser && !isAdmin && <Lock className="h-4 w-4 text-muted-foreground" />}
-              {(isAdmin || (!isUser && !isAdmin)) && (
+              {onDeleteTask && (isAdmin || (!isUser && !isAdmin)) && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -159,7 +159,7 @@ const TaskList: React.FC<TaskListProps> = ({
             {task.assignedZones && task.assignedZones.length > 0 && (
               <div className="mt-2 text-sm text-muted-foreground flex items-center">
                 <Users className="h-4 w-4 mr-1" />
-                Assigned to: {task.assignedZones.length} zone(s)
+                Assigned to: {task.assignedZones.join(', ')}
               </div>
             )}
 

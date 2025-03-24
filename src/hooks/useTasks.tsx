@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -200,7 +201,7 @@ export const useTasks = () => {
     if (!currentUser) return;
     
     // Check if user has permission to update this task
-    if (currentUser.role === 'user') {
+    if (currentUser.role === 'user' && currentUser.concernId) {
       const task = tasks.find(t => t.id === taskId);
       if (!task || !task.assignedZones.includes(currentUser.concernId)) {
         toast({
@@ -219,7 +220,7 @@ export const useTasks = () => {
     if (!currentUser) return;
     
     // Check if user has permission to comment on this task
-    if (currentUser.role === 'user') {
+    if (currentUser.role === 'user' && currentUser.concernId) {
       const task = tasks.find(t => t.id === taskId);
       if (!task || !task.assignedZones.includes(currentUser.concernId)) {
         toast({

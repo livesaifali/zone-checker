@@ -41,12 +41,7 @@ const Tasks = () => {
        task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
       true;
     
-    // Then filter by user's concern if they're a regular user
-    if (currentUser?.role === 'user' && currentUser?.concernId) {
-      return matchesSearch && task.assignedZones.includes(currentUser.concernId);
-    }
-    
-    // Admins and superadmins can see all tasks
+    // Return tasks that match search term
     return matchesSearch;
   });
 
