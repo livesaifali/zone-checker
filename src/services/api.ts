@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // Set default API URL - make sure this matches your backend
@@ -26,7 +27,10 @@ api.interceptors.request.use(
 
 // Add response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response:', response.config.url, response.data);
+    return response;
+  },
   (error) => {
     console.error('API Error Details:', error);
     
@@ -140,7 +144,38 @@ export const zoneService = {
 // Task management services
 export const taskService = {
   getAll: async () => {
+    console.log('Fetching all tasks...');
     const response = await api.get('/tasks');
+    console.log('Tasks API response:', response.data);
+    
+    // Ensure assignedZones is properly processed
+    if (response.data) {
+      return response.data.map((task: any) => {
+        // Make sure we always have an array for assignedZones, even if it's empty
+        if (!task.assignedZones) {
+          task.assignedZones = [];
+        } else if (!Array.isArray(task.assignedZones)) {
+          // Handle case where assignedZones might not be an array
+          try {
+            task.assignedZones = JSON.parse(task.assignedZones);
+            if (!Array.isArray(task.assignedZones)) {
+              task.assignedZones = [task.assignedZones];
+            }
+          } catch (e) {
+            // If it can't be parsed as JSON, treat it as a single value
+            task.assignedZones = [task.assignedZones];
+          }
+        }
+        
+        // Make sure all assignedZones are strings for consistent comparison
+        task.assignedZones = task.assignedZones.map((zone: any) => 
+          zone.toString()
+        );
+        
+        return task;
+      });
+    }
+    
     return response.data;
   },
   create: async (taskData: any) => {

@@ -50,8 +50,12 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   
-  // For user role, filter tasks to only show those assigned to their zone
-  // For admin/superadmin roles, show all tasks
+  console.log("TaskList received tasks:", tasks);
+  console.log("TaskList userConcernId:", userConcernId);
+  console.log("TaskList isUser:", isUser);
+  console.log("TaskList isAdmin:", isAdmin);
+
+  // No further filtering needed - tasks are already filtered by useTasks hook
   const filteredTasks = tasks;
 
   if (filteredTasks.length === 0) {

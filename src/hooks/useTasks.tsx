@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -177,20 +178,40 @@ export const useTasks = () => {
     },
   });
 
-  // Filter tasks based on search term and user role/concern
+  console.log("Before filtering - All tasks:", tasks);
+  console.log("Current user role:", currentUser?.role);
+  console.log("Current user concernId:", currentUser?.concernId);
+
+  // Filter tasks based on user role/concern
   const filteredTasks = tasks.filter(task => {
-    // Then filter by user's concern if they're a regular user
+    // Debug logging to help identify issues
+    console.log(`Checking task ${task.id}:`, task);
+    console.log(`Task ${task.id} assignedZones:`, task.assignedZones);
+    
+    // For regular users, only show tasks assigned to their zone
     if (currentUser?.role === 'user' && currentUser?.concernId) {
-      console.log(`Filtering for user ${currentUser.username} with concernId ${currentUser.concernId}`);
-      console.log("Task assigned zones:", task.assignedZones);
+      console.log(`Checking if task ${task.id} is assigned to user's concernId: ${currentUser.concernId}`);
       
-      // Check if the user's concernId is in the task's assignedZones
-      return task.assignedZones && task.assignedZones.includes(currentUser.concernId);
+      // The key fix: Check if the task's assignedZones includes the user's concernId
+      // Make sure to correctly handle the format of assignedZones
+      if (task.assignedZones && Array.isArray(task.assignedZones)) {
+        const isAssigned = task.assignedZones.some(zone => 
+          zone === currentUser.concernId || 
+          zone.toString() === currentUser.concernId
+        );
+        console.log(`Task ${task.id} assigned to user: ${isAssigned}`);
+        return isAssigned;
+      } else {
+        console.log(`Task ${task.id} has no valid assignedZones array`);
+        return false;
+      }
     }
     
     // Admins and superadmins can see all tasks
     return true;
   });
+
+  console.log("After filtering - Filtered tasks:", filteredTasks);
 
   const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     if (!currentUser) {
