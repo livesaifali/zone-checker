@@ -13,15 +13,21 @@ const TasksErrorState: React.FC<TasksErrorStateProps> = ({ errorDetail, onRetry 
   
   return (
     <div className="container mx-auto p-4 max-w-md">
-      <div className="bg-destructive/10 border border-destructive rounded-lg p-4 text-center">
-        <div className="flex justify-center mb-3">
-          <AlertCircle className="h-8 w-8 text-destructive" />
+      <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
+        <div className="flex justify-center mb-4">
+          <AlertCircle className="h-12 w-12 text-destructive" />
         </div>
-        <h3 className="text-lg font-medium text-destructive mb-2">Connection Error</h3>
-        <p className="text-muted-foreground mb-4">
+        <h3 className="text-xl font-medium text-destructive mb-3">Connection Error</h3>
+        <p className="text-muted-foreground mb-6">
           {errorDetail || "Could not connect to the database. Please check your connection and try again."}
         </p>
-        <Button onClick={onRetry}>Retry Connection</Button>
+        <Button 
+          onClick={onRetry}
+          className="px-6 py-2"
+          size="lg"
+        >
+          Retry Connection
+        </Button>
       </div>
     </div>
   );

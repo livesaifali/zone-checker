@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // Set default API URL - make sure this matches your backend
@@ -153,27 +154,34 @@ export const taskService = {
         return [];
       }
       
-      // Process each task to ensure correct assignedZones format
+      // Process each task to ensure proper data structure
       const processedTasks = response.data.map(task => {
         console.log(`Processing task ${task.id}:`, task);
         
+        // Normalize assignedZones to be a proper array of strings
         let assignedZones = [];
         
-        // Handle different possible formats of assignedZones
         if (task.assignedZones) {
+          // If assignedZones is already an array
           if (Array.isArray(task.assignedZones)) {
             assignedZones = task.assignedZones;
-          } else if (typeof task.assignedZones === 'string') {
+          } 
+          // If assignedZones is a JSON string
+          else if (typeof task.assignedZones === 'string') {
             try {
-              // Try to parse if it's a JSON string
               const parsed = JSON.parse(task.assignedZones);
-              assignedZones = Array.isArray(parsed) ? parsed : [parsed];
+              if (Array.isArray(parsed)) {
+                assignedZones = parsed;
+              } else {
+                assignedZones = [parsed];
+              }
             } catch (e) {
-              // If not valid JSON, treat as a single string value
+              // If it's not valid JSON, treat as a single value
               assignedZones = [task.assignedZones];
             }
-          } else {
-            // Any other type (number, object, etc.)
+          }
+          // If it's a single value (number, object, etc.)
+          else {
             assignedZones = [String(task.assignedZones)];
           }
         }
@@ -181,34 +189,43 @@ export const taskService = {
         // Ensure all zone IDs are strings for consistent comparison
         assignedZones = assignedZones.map(zone => String(zone));
         
-        console.log(`Task ${task.id} processed assignedZones:`, assignedZones);
+        console.log(`Task ${task.id} normalized assignedZones:`, assignedZones);
         
+        // Return the processed task with normalized data
         return {
           ...task,
           assignedZones
         };
       });
       
-      console.log('Processed tasks:', processedTasks);
+      console.log('All processed tasks:', processedTasks);
       return processedTasks;
     } catch (error) {
       console.error('Error fetching tasks:', error);
       throw error;
     }
   },
+  
   create: async (taskData: any) => {
+    console.log('Creating task with data:', taskData);
     const response = await api.post('/tasks', taskData);
     return response.data;
   },
+  
   updateStatus: async (id: number, status: string) => {
+    console.log(`Updating task ${id} status to ${status}`);
     const response = await api.put(`/tasks/${id}/status`, { status });
     return response.data;
   },
+  
   addComment: async (id: number, comment: string) => {
+    console.log(`Adding comment to task ${id}: ${comment}`);
     const response = await api.post(`/tasks/${id}/comments`, { comment });
     return response.data;
   },
+  
   delete: async (id: number) => {
+    console.log(`Deleting task ${id}`);
     const response = await api.delete(`/tasks/${id}`);
     return response.data;
   }

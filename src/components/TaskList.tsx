@@ -50,29 +50,39 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isCommenting, setIsCommenting] = useState<{[key: number]: boolean}>({});
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   
-  console.log("TaskList received tasks:", tasks);
-  console.log("TaskList userConcernId:", userConcernId);
-  console.log("TaskList isUser:", isUser);
-  console.log("TaskList isAdmin:", isAdmin);
+  console.log("TaskList component received props:", {
+    tasksCount: tasks.length,
+    userConcernId,
+    isUser,
+    isAdmin,
+    tasks
+  });
 
-  // Use tasks as is - they're already filtered in useTasks
-  const filteredTasks = tasks;
-
-  if (!filteredTasks || filteredTasks.length === 0) {
+  if (!tasks || tasks.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No tasks available
+      <div className="text-center py-8">
+        <div className="bg-muted/50 rounded-lg p-6 mx-auto max-w-md">
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Tasks Available</h3>
+          <p className="text-muted-foreground">
+            {isUser 
+              ? "There are currently no tasks assigned to your zone."
+              : "There are no tasks in the system yet."}
+          </p>
+        </div>
       </div>
     );
   }
 
   const handleStatusChange = (taskId: number, status: 'pending' | 'updated') => {
     if (!onStatusUpdate) return;
+    console.log(`Updating task ${taskId} status to ${status}`);
     onStatusUpdate(taskId, status);
   };
 
   const handleCommentSubmit = (taskId: number) => {
     if (!onCommentUpdate || !commentInputs[taskId]) return;
+    console.log(`Submitting comment for task ${taskId}: ${commentInputs[taskId]}`);
     onCommentUpdate(taskId, commentInputs[taskId]);
     setCommentInputs({...commentInputs, [taskId]: ''});
     setIsCommenting({...isCommenting, [taskId]: false});
@@ -80,38 +90,22 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleDeleteTask = (taskId: number) => {
     if (!onDeleteTask) return;
+    console.log(`Deleting task ${taskId}`);
     onDeleteTask(taskId);
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'updated':
-        return 'bg-green-500';
-      default:
-        return 'bg-amber-500';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'updated':
-        return <RefreshCw className="h-4 w-4 mr-1" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 mr-1" />;
-    }
   };
 
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'MMMM d, yyyy');
     } catch (e) {
+      console.error(`Error formatting date: ${dateString}`, e);
       return dateString;
     }
   };
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {filteredTasks.map((task) => (
+      {tasks.map((task) => (
         <Card 
           key={task.id} 
           className={cn(

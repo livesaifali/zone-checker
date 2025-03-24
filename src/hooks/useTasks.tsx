@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -147,7 +148,8 @@ export const useTasks = () => {
     },
   });
 
-  // Debug info about current user and tasks
+  // Log vital task information for debugging
+  console.log("=== TASK DEBUGGING INFO ===");
   console.log("Current user in useTasks:", currentUser);
   console.log("All tasks from API:", allTasks);
   console.log("User's concernId:", currentUser?.concernId);
@@ -163,19 +165,24 @@ export const useTasks = () => {
     if (currentUser?.role === 'user' && currentUser?.concernId) {
       const userConcernId = String(currentUser.concernId);
       
-      console.log(`Checking if task ${task.id} is assigned to zone ${userConcernId}`);
-      console.log(`Task ${task.id} assignedZones:`, task.assignedZones);
+      // Debug log for specific task assignment
+      console.log(`Checking task ${task.id}: ${task.title}`);
+      console.log(`- Task assignedZones:`, task.assignedZones);
       
       // Check if task has assignedZones and if user's concernId is included
       if (task.assignedZones && Array.isArray(task.assignedZones)) {
         const stringZones = task.assignedZones.map(z => String(z));
-        const isAssigned = stringZones.includes(userConcernId);
+        console.log(`- Task ${task.id} stringZones:`, stringZones);
+        console.log(`- User concernId:`, userConcernId);
         
-        console.log(`Task ${task.id} assigned to user zone ${userConcernId}: ${isAssigned}`);
-        console.log(`assignedZones as strings:`, stringZones);
+        // Check if the user's zone is in the assigned zones
+        const isAssigned = stringZones.includes(userConcernId);
+        console.log(`- Is task ${task.id} assigned to user zone ${userConcernId}? ${isAssigned}`);
         
         return isAssigned;
       }
+      
+      console.log(`Task ${task.id} has no valid assignedZones array`);
       return false;
     }
     
@@ -279,6 +286,18 @@ export const useTasks = () => {
   // Check for error
   const isError = isTasksError || isZonesError;
   const error = tasksError || zonesError;
+
+  // Set error detail if there's an error
+  useEffect(() => {
+    if (error) {
+      console.error('Error in useTasks:', error);
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        setErrorDetail((error as Error).message);
+      } else {
+        setErrorDetail('Unknown error occurred while loading tasks');
+      }
+    }
+  }, [error]);
 
   return {
     currentUser,

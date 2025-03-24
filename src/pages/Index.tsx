@@ -8,6 +8,7 @@ import TaskManagement from '@/components/TaskManagement';
 import ZoneStats from '@/components/ZoneStats';
 import AppHeader from '@/components/AppHeader';
 import EmptyState from '@/components/EmptyState';
+import TasksErrorState from '@/components/TasksErrorState';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/useTasks';
 
@@ -35,7 +36,7 @@ const Index = () => {
   } = useTasks();
 
   console.log("Index page - Current user:", currentUser);
-  console.log("Index page - Available tasks:", tasks);
+  console.log("Index page - Available tasks for user:", tasks);
   console.log("Index page - User role:", currentUser?.role);
   console.log("Index page - User concernId:", currentUser?.concernId);
 
@@ -46,6 +47,8 @@ const Index = () => {
        task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
       true;
   });
+
+  console.log("Index page - Filtered tasks:", filteredTasks);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -67,17 +70,7 @@ const Index = () => {
 
   // Show error state
   if (isError) {
-    return (
-      <div className="container mx-auto p-4 max-w-md">
-        <div className="bg-destructive/10 border border-destructive rounded-lg p-4 text-center">
-          <h3 className="text-lg font-medium text-destructive mb-2">Connection Error</h3>
-          <p className="text-muted-foreground mb-4">
-            {errorDetail || "Could not connect to the database. Please check your connection and try again."}
-          </p>
-          <Button onClick={retryQueries}>Retry Connection</Button>
-        </div>
-      </div>
-    );
+    return <TasksErrorState errorDetail={errorDetail} onRetry={retryQueries} />;
   }
 
   // Calculate task stats based on filtered tasks

@@ -35,18 +35,11 @@ const Tasks = () => {
     canCreateTasks
   } = useTasks();
 
-  console.log("Tasks component - Current user:", currentUser);
-  console.log("Tasks component - Available tasks:", tasks);
-  console.log("Tasks component - User role:", currentUser?.role);
-  console.log("Tasks component - User concernId:", currentUser?.concernId);
+  console.log("Tasks page - Current user:", currentUser);
+  console.log("Tasks page - Available tasks:", tasks);
+  console.log("Tasks page - User role:", currentUser?.role);
+  console.log("Tasks page - User concernId:", currentUser?.concernId);
 
-  // Check if tasks are loading or available
-  useEffect(() => {
-    if (!isLoadingTasks && tasks.length === 0) {
-      console.log("No tasks available for the current user");
-    }
-  }, [isLoadingTasks, tasks]);
-  
   // Filter tasks based on search term
   const filteredTasks = tasks.filter(task => {
     return searchTerm ? 
