@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Task, User } from '@/types';
@@ -16,7 +15,9 @@ export const useTasks = () => {
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
       try {
-        setCurrentUser(JSON.parse(userStr));
+        const parsedUser = JSON.parse(userStr);
+        console.log("Current user from localStorage:", parsedUser);
+        setCurrentUser(parsedUser);
       } catch (e) {
         console.error('Failed to parse user data', e);
       }
@@ -46,7 +47,9 @@ export const useTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       try {
-        return await taskService.getAll();
+        const tasksData = await taskService.getAll();
+        console.log("Fetched tasks:", tasksData);
+        return tasksData;
       } catch (error: any) {
         console.error('Failed to load tasks:', error);
         if (error.code === 'ECONNABORTED') {
@@ -174,6 +177,21 @@ export const useTasks = () => {
     },
   });
 
+  // Filter tasks based on search term and user role/concern
+  const filteredTasks = tasks.filter(task => {
+    // Then filter by user's concern if they're a regular user
+    if (currentUser?.role === 'user' && currentUser?.concernId) {
+      console.log(`Filtering for user ${currentUser.username} with concernId ${currentUser.concernId}`);
+      console.log("Task assigned zones:", task.assignedZones);
+      
+      // Check if the user's concernId is in the task's assignedZones
+      return task.assignedZones && task.assignedZones.includes(currentUser.concernId);
+    }
+    
+    // Admins and superadmins can see all tasks
+    return true;
+  });
+
   const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     if (!currentUser) {
       toast({
@@ -272,7 +290,7 @@ export const useTasks = () => {
 
   return {
     currentUser,
-    tasks,
+    tasks: filteredTasks,
     zones,
     isLoadingTasks,
     isLoadingZones,

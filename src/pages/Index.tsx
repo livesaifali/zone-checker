@@ -34,21 +34,15 @@ const Index = () => {
     canCreateTasks
   } = useTasks();
 
-  // Filter tasks based on search term and user role/concern
+  console.log("Current user in Index:", currentUser);
+  console.log("Tasks in Index:", tasks);
+
+  // Filter tasks based on search term
   const filteredTasks = tasks.filter(task => {
-    // First filter by search term
-    const matchesSearch = searchTerm ? 
+    return searchTerm ? 
       (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
        task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
       true;
-    
-    // Then filter by user's concern if they're a regular user
-    if (currentUser?.role === 'user' && currentUser?.concernId) {
-      return matchesSearch && task.assignedZones.includes(currentUser.concernId);
-    }
-    
-    // Admins and superadmins can see all tasks
-    return matchesSearch;
   });
 
   const handleSearch = (term: string) => {

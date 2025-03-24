@@ -33,16 +33,15 @@ const Tasks = () => {
     canCreateTasks
   } = useTasks();
 
-  // Filter tasks based on search term and user role/concern
+  console.log("Current tasks in Tasks.tsx:", tasks);
+  console.log("Current user in Tasks.tsx:", currentUser);
+
+  // Filter tasks based on search term
   const filteredTasks = tasks.filter(task => {
-    // First filter by search term
-    const matchesSearch = searchTerm ? 
+    return searchTerm ? 
       (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
        task.description.toLowerCase().includes(searchTerm.toLowerCase())) : 
       true;
-    
-    // Return tasks that match search term
-    return matchesSearch;
   });
 
   const handleSearch = (term: string) => {
